@@ -1,0 +1,49 @@
+.
+├── ACCESS_CREDENTIALS.md
+├── DATABASE_SETUP.md
+├── DEPLOYMENT_GUIDE.md
+├── PROJECT_STRUCTURE.txt
+├── README.md
+├── SETUP_GUIDE.md
+├── SUPABASE_SETUP.sql
+├── app
+│   ├── about
+│   │   └── page.tsx
+│   ├── admin
+│   │   ├── articles
+│   │   ├── dashboard
+│   │   ├── login
+│   │   └── settings
+│   ├── api
+│   │   ├── admin
+│   │   ├── comments
+│   │   └── like
+│   ├── article
+│   │   └── [id]
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components
+│   ├── AdminLayout.tsx
+│   ├── CommentSection.tsx
+│   ├── DeleteArticleButton.tsx
+│   ├── Footer.tsx
+│   ├── Header.tsx
+│   └── LikeButton.tsx
+├── lib
+│   ├── auth.ts
+│   ├── gemini.ts
+│   └── supabase.ts
+├── next-env.d.ts
+├── next.config.js
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── public
+│   └── uploads
+├── tailwind.config.ts
+├── tsconfig.json
+└── types
+    └── index.ts
+
+19 directories, 28 files
