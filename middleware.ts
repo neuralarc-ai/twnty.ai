@@ -5,6 +5,12 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
 
+  // Handle www subdomain - redirect to non-www
+  if (hostname.startsWith('www.')) {
+    url.hostname = hostname.replace('www.', '');
+    return NextResponse.redirect(url, 301);
+  }
+
   // Handle admin subdomain (admin.twnty.ai or admin.localhost in dev)
   const isAdminSubdomain = hostname.startsWith('admin.') || hostname.startsWith('admin.localhost');
 
