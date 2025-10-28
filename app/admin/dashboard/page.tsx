@@ -7,6 +7,15 @@ import { FileText, Eye, Heart, MessageCircle, TrendingUp, Clock } from 'lucide-r
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
+async function getAllArticles() {
+  const { data: articles } = await supabase
+    .from(TABLES.ARTICLES)
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  return articles || [];
+}
+
 async function getRecentArticles() {
   const { data: recentArticles } = await supabase
     .from(TABLES.ARTICLES)
@@ -21,6 +30,7 @@ export const revalidate = 0;
 
 export default async function AdminDashboard() {
   await checkAuth();
+  const allArticles = await getAllArticles();
   const recentArticles = await getRecentArticles();
 
   return (
@@ -40,9 +50,7 @@ export default async function AdminDashboard() {
         <DashboardStats />
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DashboardCharts />
-        </div>
+        <DashboardCharts articles={allArticles} />
 
         {/* Recent Articles */}
         <div className="bg-white border-2 border-black">

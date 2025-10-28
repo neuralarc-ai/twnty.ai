@@ -90,7 +90,7 @@ export default async function HomePage() {
                     <div className="p-8 flex-1 flex flex-col">
                       {featuredArticle.hashtags && featuredArticle.hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {featuredArticle.hashtags.slice(0, 3).map((tag, idx) => (
+                          {featuredArticle.hashtags.slice(0, 3).map((tag: string, idx: number) => (
                             <span key={idx} className="px-3 py-1 bg-black text-white text-xs font-medium">
                               {tag}
                             </span>
@@ -142,7 +142,7 @@ export default async function HomePage() {
                     <div className="p-6 flex-1 flex flex-col">
                       {secondArticle.hashtags && secondArticle.hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {secondArticle.hashtags.slice(0, 2).map((tag, idx) => (
+                          {secondArticle.hashtags.slice(0, 2).map((tag: string, idx: number) => (
                             <span key={idx} className="px-2 py-1 bg-black text-white text-xs font-medium">
                               {tag}
                             </span>
