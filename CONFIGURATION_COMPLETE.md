@@ -17,7 +17,7 @@
 - ✅ Gemini API key saved to database
 
 ### API Configuration ✓
-- ✅ Gemini API Key: `AIzaSyBGS1h4sCnHEkX75dWZbiPDyRsFOfehX_k`
+- ✅ Gemini API Key configured (stored securely in database)
 - ✅ Configured for Gemini 2.5 Pro (as requested)
 - ✅ Ready for AI article generation
 
