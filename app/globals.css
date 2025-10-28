@@ -27,80 +27,240 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
+.article-content-wrapper {
+  position: relative;
+  padding: 2rem 0;
+}
+
 .article-content {
   font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
-  font-size: 1.125rem;
-  line-height: 1.8;
-  color: #000;
+  color: #1a1a1a;
 }
 
-.article-content p {
+.article-body {
+  font-family: Georgia, 'Palatino Linotype', Palatino, serif;
+  font-size: 1.3rem;
+  line-height: 1.85;
+  color: #2a2a2a;
+  letter-spacing: 0.005em;
+  word-spacing: 0.02em;
+  padding: 2rem 3rem;
+  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .article-body {
+    padding: 1.5rem 1.5rem;
+    font-size: 1.15rem;
+    line-height: 1.8;
+  }
+}
+
+.article-body p {
+  margin-bottom: 1.8rem !important;
+  margin-top: 0 !important;
+  text-align: left !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  display: block !important;
+  orphans: 3;
+  widows: 3;
+}
+
+.article-body p:first-child {
+  font-size: 1.5rem !important;
+  line-height: 1.8 !important;
+  color: #1a1a1a !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 2rem !important;
+}
+
+.article-body strong,
+.article-body em {
+  display: inline !important;
+}
+
+/* Rich text editor HTML content styling */
+.article-body :global(p) {
+  margin-bottom: 1.8rem !important;
+  margin-top: 0 !important;
+  text-align: left !important;
+  line-height: 1.85;
+}
+
+.article-body :global(h1),
+.article-body :global(h2),
+.article-body :global(h3) {
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+}
+
+.article-body :global(h1) {
+  font-size: 2.5rem !important;
+}
+
+.article-body :global(h2) {
+  font-size: 2rem !important;
+}
+
+.article-body :global(h3) {
+  font-size: 1.5rem !important;
+}
+
+.article-body :global(ul),
+.article-body :global(ol) {
+  margin: 1.5rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.article-body :global(li) {
+  margin-bottom: 0.5rem !important;
+  line-height: 1.85;
+}
+
+.article-body :global(blockquote) {
+  border-left: 4px solid #000 !important;
+  padding-left: 1.5rem !important;
+  margin: 2rem 0 !important;
+  font-style: italic !important;
+  color: #3a3a3a !important;
+}
+
+.article-body :global(code) {
+  background: #f0f0f0 !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 4px !important;
+  font-family: 'Courier New', monospace !important;
+}
+
+.article-body :global(pre) {
+  background: #f5f5f5 !important;
+  padding: 1.5rem !important;
+  border-radius: 6px !important;
+  overflow-x: auto !important;
+  margin: 2rem 0 !important;
+}
+
+.article-body :global(a) {
+  color: #000 !important;
+  text-decoration: underline !important;
+}
+
+.article-body :global(a:hover) {
+  opacity: 0.7 !important;
+}
+
+.article-body p:first-child::first-letter {
+  font-size: 4rem !important;
+  font-weight: 700 !important;
+  float: left !important;
+  line-height: 0.8 !important;
+  padding: 0.1rem 0.2rem 0 0 !important;
+  color: #000 !important;
+}
+
+.article-body p + p {
+  text-indent: 0;
+}
+
+.article-body h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 3rem;
   margin-bottom: 1.5rem;
+  color: #000;
+  line-height: 1.3;
 }
 
-.article-content h2 {
-  font-size: 1.875rem;
+.article-body h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
   margin-top: 2.5rem;
   margin-bottom: 1rem;
+  color: #000;
+  line-height: 1.3;
 }
 
-.article-content h3 {
-  font-size: 1.5rem;
-  margin-top: 2rem;
+.article-body ul, .article-body ol {
+  margin: 2rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.article-body li {
   margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.8;
 }
 
-.article-content ul, .article-content ol {
-  margin-left: 2rem;
-  margin-bottom: 1.5rem;
-}
-
-.article-content li {
-  margin-bottom: 0.5rem;
-}
-
-.article-content blockquote {
+.article-body blockquote {
   border-left: 4px solid #000;
-  padding-left: 1.5rem;
-  margin: 2rem 0;
+  padding-left: 2rem;
+  margin: 2.5rem 0;
   font-style: italic;
+  font-size: 1.35rem;
+  color: #3a3a3a;
+  background: #f9f9f9;
+  padding: 1.5rem 2rem;
+  border-radius: 4px;
 }
 
-.article-content a {
+.article-body a {
   color: #000;
   text-decoration: underline;
   transition: opacity 0.2s;
+  font-weight: 500;
 }
 
-.article-content a:hover {
-  opacity: 0.7;
+.article-body a:hover {
+  opacity: 0.6;
 }
 
-.article-content img {
+.article-body strong {
+  font-weight: 700;
+  color: #000;
+}
+
+.article-body em {
+  font-style: italic;
+}
+
+.article-body img {
   max-width: 100%;
   height: auto;
-  margin: 2rem 0;
+  margin: 2.5rem 0;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.article-content code {
-  background: #f5f5f5;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
+.article-body code {
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', 'Monaco', monospace;
   font-size: 0.9em;
+  color: #000;
 }
 
-.article-content pre {
+.article-body pre {
   background: #f5f5f5;
-  padding: 1rem;
-  border-radius: 5px;
+  padding: 1.5rem;
+  border-radius: 6px;
   overflow-x: auto;
-  margin: 1.5rem 0;
+  margin: 2.5rem 0;
+  border: 1px solid #e0e0e0;
 }
 
-.article-content pre code {
+.article-body pre code {
   background: none;
   padding: 0;
+  color: #000;
 }
 
 /* Minimal scrollbar */

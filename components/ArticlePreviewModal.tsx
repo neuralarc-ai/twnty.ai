@@ -3,6 +3,7 @@
 import { X, Eye, Heart, Clock, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
+// Rich text content will be rendered directly as HTML
 
 interface ArticlePreviewModalProps {
   isOpen?: boolean;
@@ -104,12 +105,23 @@ export default function ArticlePreviewModal({
             </div>
 
             {/* Article Content */}
-            <div className="article-content prose prose-lg max-w-none">
-              {article.content.split('\n\n').map((paragraph, index) => (
-                <p key={index} className="mb-6 text-lg leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
+            <div className="max-w-4xl mx-auto pb-8" style={{ paddingTop: '2rem' }}>
+              <div 
+                dangerouslySetInnerHTML={{ __html: article.content }}
+                className="article-body prose prose-lg"
+                style={{
+                  fontFamily: 'Georgia, "Palatino Linotype", Palatino, serif',
+                  fontSize: '1.3rem',
+                  lineHeight: '1.85',
+                  color: '#2a2a2a',
+                  letterSpacing: '0.005em',
+                  wordSpacing: '0.02em',
+                  padding: '2rem 3rem',
+                  background: 'linear-gradient(to bottom, #fafafa 0%, #ffffff 100%)',
+                  borderRadius: '8px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                }}
+              />
             </div>
 
             {/* Media */}

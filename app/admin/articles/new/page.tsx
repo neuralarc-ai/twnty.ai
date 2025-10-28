@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import ArticlePreviewModal from '@/components/ArticlePreviewModal';
+import RichTextEditor from '@/components/RichTextEditor';
 import { Wand2, Upload, X, Calendar, Link as LinkIcon, Music, Video, Eye } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
@@ -227,16 +228,16 @@ export default function NewArticlePage() {
           {/* Content */}
           <div className="bg-white border border-gray-200 p-6">
             <label className="block text-sm font-medium mb-2">Content *</label>
-            <textarea
+            <RichTextEditor
               value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              required
-              rows={20}
-              className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none font-serif"
-              placeholder="Write your article content here..."
+              onChange={(value) => setFormData({ ...formData, content: value })}
+              placeholder="Start writing your article..."
             />
             <p className="text-sm text-gray-600 mt-2">
-              Word count: {formData.content.split(/\s+/).filter(w => w).length}
+              Word count: {formData.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w).length}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Use the toolbar to format your text with bold, italic, headings, lists, and more.
             </p>
           </div>
 
@@ -539,9 +540,13 @@ export default function NewArticlePage() {
                 />
               </div>
 
-              {!geminiApiKey && (
+              {!geminiApiKey ? (
                 <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 text-sm rounded">
                   Please configure your Gemini API key in Settings first.
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 text-sm rounded">
+                  ✨ AI will generate a fully formatted article with HTML, including headings, bold text, lists, and proper spacing - ready to publish!
                 </div>
               )}
 

@@ -13,24 +13,37 @@ export async function generateArticleWithGemini(
 
 ${additionalContext ? `Additional context: ${additionalContext}` : ''}
 
-Requirements:
+CRITICAL REQUIREMENTS - Generate HTML-formatted content:
 - The article must be at least 800 words
 - Write in a clear, engaging, professional style
-- Use proper paragraphs with natural flow
-- DO NOT use any markdown syntax (no **, __, ##, ---, ***, etc.)
-- DO NOT use bullet points or numbered lists with markdown
-- Write everything as flowing prose with proper paragraphs
-- Use natural paragraph breaks for readability
-- Include a compelling introduction and conclusion
-- Make it informative and valuable to readers
-- Write in plain text format only
+- Format the content using ONLY HTML tags (no markdown, no plain text)
+- Use proper HTML structure with semantic tags
 
-CRITICAL: Output ONLY clean, well-formatted text. No markdown symbols whatsoever.
+HTML FORMATTING REQUIREMENTS:
+1. Use <p> tags for all paragraphs (wrap each paragraph in <p></p>)
+2. Use <h2> tags for major section headings (2-3 sections recommended)
+3. Use <h3> tags for subsection headings
+4. Use <strong> tags for emphasis and important points (use sparingly, 3-5 times)
+5. Use <em> tags for subtle emphasis
+6. Use <ul> and <li> for bullet lists when appropriate
+7. Use <ol> and <li> for numbered lists when listing steps or items
+8. Use <blockquote> for quotes or highlighted important statements
+
+STRUCTURE REQUIREMENTS:
+- Start with an engaging introduction (in <p> tags)
+- Include 2-3 main sections with <h2> headings
+- Each section should have 2-3 paragraphs with <p> tags
+- Use <strong> to highlight 3-5 key points throughout the article
+- Include at least one list (ul or ol) somewhere in the content
+- Include a compelling conclusion (in <p> tags)
+- Make it informative and valuable to readers
+
+CRITICAL: Output ONLY valid HTML content wrapped in paragraph and heading tags.
 
 Format your response as JSON:
 {
   "title": "Article Title Here",
-  "content": "Full article content as clean text with proper paragraphs...",
+  "content": "<p>First paragraph with engaging introduction...</p><h2>Main Section Title</h2><p>Content paragraph with <strong>important point</strong>...</p><ul><li>First item</li><li>Second item</li></ul>",
   "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
 }`;
 

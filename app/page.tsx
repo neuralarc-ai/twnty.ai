@@ -2,9 +2,14 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { supabase, isSupabaseConfigured, TABLES } from '@/lib/supabase';
 import Link from 'next/link';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import { formatDistanceToNow } from 'date-fns';
 import { Eye, Heart, Clock } from 'lucide-react';
+
+// Helper function to strip HTML tags from teaser
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
 
 async function getPublishedArticles() {
   if (!isSupabaseConfigured()) {
@@ -79,8 +84,8 @@ export default async function HomePage() {
                   >
                     {featuredArticle.featured_image && (
                       <div className="relative w-full h-80 overflow-hidden">
-                        <Image
-                          src={featuredArticle.featured_image}
+                        <SafeImage
+                          logsrc={featuredArticle.featured_image}
                           alt={featuredArticle.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -102,7 +107,7 @@ export default async function HomePage() {
                       </h2>
                       {featuredArticle.teaser && (
                         <p className="text-gray-700 mb-6 line-clamp-3 leading-relaxed">
-                          {featuredArticle.teaser}
+                          {stripHtmlTags(featuredArticle.teaser)}
                         </p>
                       )}
                       <div className="flex items-center gap-6 text-sm text-gray-600 mt-auto">
@@ -131,8 +136,8 @@ export default async function HomePage() {
                   >
                     {secondArticle.featured_image && (
                       <div className="relative w-full h-48 overflow-hidden">
-                        <Image
-                          src={secondArticle.featured_image}
+                        <SafeImage
+                          logsrc={secondArticle.featured_image}
                           alt={secondArticle.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -154,7 +159,7 @@ export default async function HomePage() {
                       </h3>
                       {secondArticle.teaser && (
                         <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed">
-                          {secondArticle.teaser}
+                          {stripHtmlTags(secondArticle.teaser)}
                         </p>
                       )}
                       <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto">
@@ -186,8 +191,8 @@ export default async function HomePage() {
                       >
                         {article.featured_image && (
                           <div className="relative w-full h-48 overflow-hidden">
-                            <Image
-                              src={article.featured_image}
+                            <SafeImage
+                              logsrc={article.featured_image}
                               alt={article.title}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -213,7 +218,7 @@ export default async function HomePage() {
                           {/* Teaser - Limited to 3 lines */}
                           {article.teaser && (
                             <p className="text-gray-700 text-sm mb-4 line-clamp-3 flex-1">
-                              {article.teaser}
+                              {stripHtmlTags(article.teaser)}
                             </p>
                           )}
 

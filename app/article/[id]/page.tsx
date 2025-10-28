@@ -1,13 +1,15 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { supabase, TABLES } from '@/lib/supabase';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import { formatDistanceToNow, format } from 'date-fns';
 import { notFound } from 'next/navigation';
 import LikeButton from '@/components/LikeButton';
 import ShareButton from '@/components/ShareButton';
 import CommentSection from '@/components/CommentSection';
 import { Heart, Eye, Clock, Calendar } from 'lucide-react';
+// Rich text content will be rendered directly as HTML
+
 
 async function getArticle(id: string) {
   const { data, error } = await supabase
@@ -93,8 +95,8 @@ export default async function ArticlePage({ params }: { params: { id: string } }
           {/* Featured Image - Full Width */}
           {article.featured_image && (
             <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] mb-12 border-2 border-black overflow-hidden">
-              <Image
-                src={article.featured_image}
+              <SafeImage
+                logsrc={article.featured_image}
                 alt={article.title}
                 fill
                 className="object-cover"
@@ -104,10 +106,22 @@ export default async function ArticlePage({ params }: { params: { id: string } }
           )}
 
           {/* Article Content */}
-          <div className="article-content prose prose-lg max-w-none">
+          <div className="max-w-4xl mx-auto mt-8 pb-8" style={{ paddingTop: '2rem' }}>
             <div 
-              dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }}
-              className="text-lg leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+              className="article-body prose prose-lg"
+              style={{
+                fontFamily: 'Georgia, "Palatino Linotype", Palatino, serif',
+                fontSize: '1.15rem',
+                lineHeight: '1.85',
+                color: '#2a2a2a',
+                letterSpacing: '0.005em',
+                wordSpacing: '0.02em',
+                padding: '2rem 3rem',
+                background: 'linear-gradient(to bottom, #fafafa 0%, #ffffff 100%)',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+              }}
             />
           </div>
 
@@ -130,7 +144,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
 
           {/* Article Actions */}
           <div className="flex items-center justify-center gap-6 py-8 border-y border-gray-200">
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 h-[42px] text-gray-600">
               <Eye className="w-5 h-5" />
               <span className="text-sm font-medium">{article.views || 0} views</span>
             </div>

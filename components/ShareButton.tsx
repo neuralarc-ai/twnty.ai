@@ -50,7 +50,7 @@ export default function ShareButton({ articleId, title }: { articleId: string; t
     <div className="relative">
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className="flex items-center space-x-2 px-4 py-2 border-2 border-black hover:bg-black hover:text-white transition-all"
+        className="flex items-center justify-center gap-2 px-4 py-2 h-[42px] border-2 border-black font-medium hover:bg-black hover:text-white transition-all whitespace-nowrap"
         aria-label="Share article"
       >
         <Share2 className="w-5 h-5" />

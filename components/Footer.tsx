@@ -10,9 +10,6 @@ export default function Footer() {
             <a href="/about" className="text-sm text-gray-600 hover:text-black transition-colors">
               About
             </a>
-            <a href="/admin/login" className="text-sm text-gray-600 hover:text-black transition-colors">
-              Admin
-            </a>
           </div>
         </div>
       </div>

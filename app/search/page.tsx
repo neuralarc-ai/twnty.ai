@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import Image from 'next/image';
+import SafeImage from '@/components/SafeImage';
 import { Search, X, Eye, Heart, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+
+// Helper function to strip HTML tags from teaser
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
 
 interface Article {
   id: string;
@@ -139,8 +144,8 @@ export default function SearchPage() {
                       {/* Image */}
                       {article.featured_image && (
                         <div className="md:w-1/3 relative h-64 md:h-auto bg-gray-100">
-                          <Image
-                            src={article.featured_image}
+                          <SafeImage
+                            logsrc={article.featured_image}
                             alt={article.title}
                             fill
                             className="object-cover"
@@ -171,7 +176,7 @@ export default function SearchPage() {
 
                         {/* Teaser */}
                         <p className="text-gray-700 mb-4 line-clamp-3">
-                          {article.teaser}
+                          {stripHtmlTags(article.teaser)}
                         </p>
 
                         {/* Meta */}
