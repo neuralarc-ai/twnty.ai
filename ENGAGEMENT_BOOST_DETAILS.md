@@ -2,32 +2,34 @@
 
 ## ⏰ Schedule
 
-**Current:** Runs **once per day** at midnight UTC
-- Schedule: `0 0 * * *` (daily at 12:00 AM UTC)
-- Frequency: **1 execution per day** (due to Vercel Free Tier limitation)
+**Recommended:** Use **external cron service** for hourly execution
+- **External Cron:** `0 * * * *` (every hour) - Recommended ✅
+- **Vercel Cron:** Daily only (not recommended for natural distribution)
+
+**Current Setup:** Code is optimized for hourly execution to spread engagement throughout the day
 
 ## 📈 Per Article Per Day
 
 For each published article, the cron job adds:
 
 ### 1. **Likes**
-- **Amount:** Random between 20-30 likes per article
-- **Probability:** 100% (always added)
-- **Expected per day:** ~25 likes per article (average of 20-30)
-- **Range:** 20-30 likes per article per day
+- **Amount:** 1 like per article per hour
+- **Probability:** 80% chance per hour
+- **Expected per day:** ~19 likes per article (20-30 range over 24 hours)
+- **Distribution:** Spread naturally throughout the day ⏰
 
 ### 2. **Comments**
-- **Amount:** Random between 10-15 comments per article
-- **Probability:** 100% (always added)
-- **Expected per day:** ~12.5 comments per article (average of 10-15)
-- **Range:** 10-15 comments per article per day
+- **Amount:** 1 comment per article per hour
+- **Probability:** 50% chance per hour
+- **Expected per day:** ~12 comments per article (10-15 range over 24 hours)
+- **Distribution:** Spread naturally throughout the day ⏰
 - **Comments are realistic:** Uses 15 different templates with random names and emails
 
 ### 3. **Views**
-- **Amount:** Random between 10-20 views
-- **Probability:** 100% (always added)
-- **Expected per day:** 15 views per article (average of 10-20)
-- **Range:** 10-20 views per article per day
+- **Amount:** 1 view per article per hour
+- **Probability:** 60% chance per hour
+- **Expected per day:** ~14 views per article (spread throughout day)
+- **Distribution:** Spread naturally throughout the day ⏰
 
 ## 📊 Example: Daily Totals
 
