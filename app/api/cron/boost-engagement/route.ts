@@ -41,11 +41,19 @@ function generateRandomEmail(name: string): string {
   return `${username}@${emailDomains[Math.floor(Math.random() * emailDomains.length)]}`;
 }
 
+// Runtime config for Vercel Edge/Serverless
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret to prevent unauthorized access
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || 'your-secret-key';
+    // Vercel automatically adds CRON_SECRET to Authorization header
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (!cronSecret) {
+      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+    }
     
     if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
