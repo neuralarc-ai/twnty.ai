@@ -112,7 +112,15 @@ export async function GET(request: NextRequest) {
 
     if (viewsError) {
       // Check if error is due to missing views column
-      if (viewsError.code === '42703' || viewsError.message?.includes('does not exist')) {
+      // Cast to any to access Supabase error properties
+      const err = viewsError as any;
+      const errorCode = err?.code;
+      const errorMessage = err?.message || '';
+      const isViewsError = errorCode === '42703' || 
+                          errorMessage.includes('does not exist') ||
+                          errorMessage.includes('views');
+      
+      if (isViewsError) {
         console.warn('Views column does not exist, fetching articles without views');
         hasViewsColumn = false;
         
