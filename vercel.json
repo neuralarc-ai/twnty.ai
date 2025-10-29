@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/boost-engagement",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+

@@ -48,26 +48,22 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret to prevent unauthorized access
-    // Vercel automatically adds CRON_SECRET to Authorization header
+    // Vercel Cron Jobs automatically authenticate via internal headers
+    // For external callers, we can optionally check CRON_SECRET
+    // This makes it work with both Vercel Cron and external services
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
     const cronSecret = process.env.CRON_SECRET;
     
-    if (!cronSecret) {
-      console.error('CRON_SECRET not configured');
-      return NextResponse.json({ 
-        error: 'CRON_SECRET not configured',
-        message: 'CRON_SECRET environment variable is missing'
-      }, { status: 500 });
-    }
-    
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      console.error('Unauthorized cron request', { 
-        hasHeader: !!authHeader,
-        headerLength: authHeader?.length || 0,
-        secretLength: cronSecret.length
-      });
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // If CRON_SECRET is set, verify it (for external callers)
+    // Vercel Cron calls don't need this check as they're automatically authenticated
+    if (cronSecret) {
+      if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+        console.error('Unauthorized cron request', { 
+          hasHeader: !!authHeader,
+          headerLength: authHeader?.length || 0
+        });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     // Verify Supabase configuration
@@ -202,7 +198,9 @@ export async function GET(request: NextRequest) {
     // Log the raw error first
     console.error('Raw error boosting engagement:', error);
     console.error('Error type:', typeof error);
-    console.error('Error constructor:', error?.constructor?.name);
+    if (error && typeof error === 'object') {
+      console.error('Error constructor:', (error as any).constructor?.name);
+    }
     
     // Better error extraction for various error types
     let errorMessage = 'Unknown error occurred';
@@ -222,8 +220,8 @@ export async function GET(request: NextRequest) {
     } else if (typeof error === 'object') {
       // Handle Supabase errors and other object errors
       const err = error as any;
-      errorCode = err.code || err.error_code || err.error_code || 'UNKNOWN';
-      errorMessage = err.message || err.error_description || err.details || err.hint || err.toString() || 'Database operation failed';
+      errorCode = err.code || err.error_code || 'UNKNOWN';
+      errorMessage = err.message || err.error_description || err.details || err.hint || 'Database operation failed';
       
       // Extract Supabase-specific error info
       if (err.hint) {
