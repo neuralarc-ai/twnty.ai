@@ -26,13 +26,18 @@ export default function AdminLoginPage() {
       });
 
       if (response.ok) {
-        // Get the current hostname and redirect to admin subdomain
-        const isLocalhost = window.location.hostname === 'localhost';
-        if (isLocalhost) {
+        // Check if already on admin subdomain
+        const hostname = window.location.hostname;
+        const isAdminSubdomain = hostname.startsWith('admin.');
+        const isLocalhost = hostname === 'localhost' || hostname.startsWith('admin.localhost');
+        
+        if (isLocalhost || isAdminSubdomain) {
+          // Already on admin subdomain or localhost - just redirect
           router.push('/admin/dashboard');
         } else {
-          // Redirect to admin subdomain
-          window.location.href = `https://admin.${window.location.hostname}/admin/dashboard`;
+          // On main domain - redirect to admin subdomain
+          const baseDomain = hostname.split('.').slice(-2).join('.'); // Get base domain (twnty.ai)
+          window.location.href = `https://admin.${baseDomain}/admin/dashboard`;
         }
       } else {
         const data = await response.json();
