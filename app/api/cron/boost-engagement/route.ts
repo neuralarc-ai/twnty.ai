@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, TABLES } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { TABLES } from '@/lib/supabase';
 
 // This endpoint should be called by a cron job every hour
 // Over 24 hours, this will add 20-30 likes and comments per article
@@ -70,6 +71,9 @@ export async function GET(request: NextRequest) {
         details: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid'
       }, { status: 500 });
     }
+
+    // Create a fresh Supabase client with verified credentials
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get all published articles
     const { data: articles, error } = await supabase
@@ -160,10 +164,12 @@ export async function GET(request: NextRequest) {
     
     // Better error extraction for various error types
     let errorMessage = 'Unknown error';
+    let errorCode: string | undefined;
     let errorDetails: any = null;
     
     if (error instanceof Error) {
-      errorMessage = error.message;
+      errorMessage = error.message || error.name || 'Unknown error';
+      errorCode = error.name;
       errorDetails = {
         name: error.name,
         message: error.message,
@@ -172,29 +178,32 @@ export async function GET(request: NextRequest) {
     } else if (typeof error === 'object' && error !== null) {
       // Handle Supabase errors and other object errors
       const err = error as any;
-      errorMessage = err.message || err.error_description || err.details || err.hint || JSON.stringify(error);
+      errorCode = err.code || err.error_code;
+      errorMessage = err.message || err.error_description || err.details || err.hint || 'Database operation failed';
+      
+      // Extract Supabase-specific error info
+      if (err.hint) {
+        errorMessage = `${errorMessage} (Hint: ${err.hint})`;
+      }
+      
       errorDetails = {
         code: err.code,
         message: err.message,
         details: err.details,
-        hint: err.hint,
-        raw: process.env.NODE_ENV === 'development' ? err : undefined
+        hint: err.hint
       };
     } else {
       errorMessage = String(error);
     }
     
-    console.error('Error details:', {
-      message: errorMessage,
-      details: errorDetails,
-      type: typeof error,
-      stringified: JSON.stringify(error)
-    });
+    // Log full error for debugging
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
     return NextResponse.json({ 
       error: 'Failed to boost engagement',
-      details: errorMessage,
-      ...(errorDetails && { errorInfo: errorDetails })
+      message: errorMessage,
+      code: errorCode,
+      ...(errorDetails && { details: errorDetails })
     }, { status: 500 });
   }
 }
