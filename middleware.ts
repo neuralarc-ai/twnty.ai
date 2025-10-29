@@ -6,10 +6,14 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
 
   // Handle www subdomain - redirect to non-www
-  if (hostname.startsWith('www.')) {
-    url.hostname = hostname.replace('www.', '');
-    return NextResponse.redirect(url, 301);
-  }
+  // NOTE: This is disabled to avoid redirect loops. Configure www redirect at your hosting platform level (Vercel/etc)
+  // if (hostname.startsWith('www.')) {
+  //   const nonWwwHostname = hostname.replace('www.', '');
+  //   const protocol = request.nextUrl.protocol;
+  //   const path = request.nextUrl.pathname + request.nextUrl.search;
+  //   const redirectUrl = `${protocol}//${nonWwwHostname}${path}`;
+  //   return NextResponse.redirect(redirectUrl, 301);
+  // }
 
   // Handle admin subdomain (admin.twnty.ai or admin.localhost in dev)
   const isAdminSubdomain = hostname.startsWith('admin.') || hostname.startsWith('admin.localhost');
@@ -48,6 +52,7 @@ export const config = {
      * - static files (_next/static)
      * - image optimization files (_next/image)
      * - favicon and other public files
+     * Note: www redirect should be handled at platform level (Vercel/etc) to avoid loops
      */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
