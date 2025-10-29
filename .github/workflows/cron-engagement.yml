@@ -24,34 +24,42 @@ jobs:
 
       - name: Call Engagement Boost API
         run: |
-          echo "Calling: https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement"
+          set -e  # Exit on any error
           
-          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X GET \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement 2>&1)
+          DOMAIN="${{ secrets.VERCEL_DOMAIN }}"
+          SECRET="${{ secrets.CRON_SECRET }}"
           
-          HTTP_CODE=$(echo "$RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed 's/HTTP_CODE:.*//')
+          echo "📡 Calling API endpoint..."
+          echo "Domain: $DOMAIN"
+          echo "URL: https://$DOMAIN/api/cron/boost-engagement"
           
-          echo "---"
-          echo "Response Code: $HTTP_CODE"
+          # Make the API call and capture both response and status code
+          HTTP_CODE=$(curl -s -o response_body.txt -w "%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer $SECRET" \
+            "https://$DOMAIN/api/cron/boost-engagement")
+          
+          echo ""
+          echo "--- Response ---"
+          echo "HTTP Status Code: $HTTP_CODE"
           echo "Response Body:"
-          echo "$BODY"
+          cat response_body.txt
           echo "---"
+          echo ""
           
-          if [ -z "$HTTP_CODE" ]; then
-            echo "Error: Failed to get HTTP code. Full response:"
-            echo "$RESPONSE"
+          # Check if curl was successful
+          if [ $? -ne 0 ]; then
+            echo "❌ Error: curl command failed"
             exit 1
           fi
           
-          if [ "$HTTP_CODE" != "200" ]; then
+          # Check HTTP status code
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Success! API call completed successfully."
+          else
             echo "❌ Error: API returned HTTP $HTTP_CODE"
-            echo "Response: $BODY"
             exit 1
           fi
-          
-          echo "✅ Success! API call completed successfully."
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
