@@ -91,13 +91,18 @@ export async function GET(request: NextRequest) {
 
       // Update likes and views
       if (likesBoost > 0 || viewsBoost > 0) {
-        await supabase
+        const { error: updateError } = await supabase
           .from(TABLES.ARTICLES)
           .update({
             likes: (article.likes || 0) + likesBoost,
             views: (article.views || 0) + viewsBoost,
           })
           .eq('id', article.id);
+        
+        if (updateError) {
+          console.error(`Error updating article ${article.id}:`, updateError);
+          throw updateError;
+        }
       }
 
       // Add comment if selected
@@ -106,7 +111,7 @@ export async function GET(request: NextRequest) {
         const randomEmail = generateRandomEmail(randomName);
         const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
         
-        await supabase
+        const { error: commentError } = await supabase
           .from(TABLES.COMMENTS)
           .insert({
             article_id: article.id,
@@ -114,6 +119,11 @@ export async function GET(request: NextRequest) {
             author_email: randomEmail,
             content: randomComment,
           });
+        
+        if (commentError) {
+          console.error(`Error inserting comment for article ${article.id}:`, commentError);
+          throw commentError;
+        }
         
         commentsAdded++;
       }
@@ -135,9 +145,19 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error boosting engagement:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      type: typeof error
+    });
+    
     return NextResponse.json({ 
       error: 'Failed to boost engagement',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
     }, { status: 500 });
   }
 }
