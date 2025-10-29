@@ -26,7 +26,14 @@ export default function AdminLoginPage() {
       });
 
       if (response.ok) {
-        router.push('/admin/dashboard');
+        // Get the current hostname and redirect to admin subdomain
+        const isLocalhost = window.location.hostname === 'localhost';
+        if (isLocalhost) {
+          router.push('/admin/dashboard');
+        } else {
+          // Redirect to admin subdomain
+          window.location.href = `https://admin.${window.location.hostname}/admin/dashboard`;
+        }
       } else {
         const data = await response.json();
         setError(data.error || 'Invalid credentials');

@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/AdminLayout';
-import { Save, Key, Users, User, Upload } from 'lucide-react';
+import { Save, Users, User, Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'api' | 'users' | 'author'>('api');
+  const [activeTab, setActiveTab] = useState<'users' | 'author'>('users');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-
-  // API Settings
-  const [geminiApiKey, setGeminiApiKey] = useState('');
 
   // Author Settings
   const [authorData, setAuthorData] = useState({
@@ -32,21 +29,8 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    fetchSettings();
     fetchAuthorInfo();
   }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch('/api/admin/settings?key=gemini_api_key');
-      if (response.ok) {
-        const data = await response.json();
-        setGeminiApiKey(data.value || '');
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-    }
-  };
 
   const fetchAuthorInfo = async () => {
     try {
@@ -66,32 +50,6 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Error fetching author info:', error);
-    }
-  };
-
-  const saveApiSettings = async () => {
-    setSaving(true);
-    setMessage('');
-    try {
-      const response = await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: 'gemini_api_key',
-          value: geminiApiKey,
-        }),
-      });
-
-      if (response.ok) {
-        setMessage('API settings saved successfully!');
-      } else {
-        setMessage('Failed to save settings');
-      }
-    } catch (error) {
-      setMessage('Failed to save settings');
-    } finally {
-      setSaving(false);
-      setTimeout(() => setMessage(''), 3000);
     }
   };
 
@@ -187,6 +145,9 @@ export default function SettingsPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-serif font-bold mb-2">Settings</h1>
           <p className="text-gray-600">Configure your blog settings</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Note: API keys are managed through environment variables in .env.local
+          </p>
         </div>
 
         {message && (
@@ -198,17 +159,6 @@ export default function SettingsPage() {
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-6">
           <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('api')}
-              className={`pb-4 px-2 font-medium transition-colors ${
-                activeTab === 'api'
-                  ? 'border-b-2 border-black text-black'
-                  : 'text-gray-600 hover:text-black'
-              }`}
-            >
-              <Key size={16} className="inline mr-2" />
-              API Configuration
-            </button>
             <button
               onClick={() => setActiveTab('users')}
               className={`pb-4 px-2 font-medium transition-colors ${
@@ -233,39 +183,6 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
-
-        {/* API Configuration Tab */}
-        {activeTab === 'api' && (
-          <div className="bg-white border border-gray-200 p-6 space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Gemini 2.5 Pro API Key *
-              </label>
-              <input
-                type="password"
-                value={geminiApiKey}
-                onChange={(e) => setGeminiApiKey(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
-                placeholder="Enter your Gemini API key"
-              />
-              <p className="text-sm text-gray-600 mt-2">
-                This API key will be used to generate articles with AI. Get your key from{' '}
-                <a href="https://makersuite.google.com/app/apikey" target="_blank" className="text-blue-600 hover:underline">
-                  Google AI Studio
-                </a>
-              </p>
-            </div>
-
-            <button
-              onClick={saveApiSettings}
-              disabled={saving}
-              className="flex items-center space-x-2 px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              <Save size={20} />
-              <span>{saving ? 'Saving...' : 'Save API Settings'}</span>
-            </button>
-          </div>
-        )}
 
         {/* User Management Tab */}
         {activeTab === 'users' && (

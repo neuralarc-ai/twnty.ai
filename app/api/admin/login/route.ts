@@ -12,11 +12,18 @@ export async function POST(request: NextRequest) {
     if (email === adminEmail && password === adminPassword) {
       // Set session cookie
       const cookieStore = await cookies();
+      
+      // Get the domain from the request
+      const hostname = request.headers.get('host') || '';
+      const isLocalhost = hostname.includes('localhost');
+      const domain = isLocalhost ? undefined : `.${hostname.split(':')[0].split('.').slice(-2).join('.')}`;
+      
       cookieStore.set('admin_session', 'authenticated', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
+        ...(domain && { domain }),
       });
 
       return NextResponse.json({ success: true });

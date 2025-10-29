@@ -17,18 +17,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
-    const articleData = {
+    const articleData: any = {
       title: body.title,
       content: body.content,
-      teaser: body.excerpt || body.teaser || body.content.substring(0, 200) + '...',
-      featured_image: body.image_url || body.featured_image,
-      media_url: body.audio_url || body.video_url || body.media_url,
-      media_type: body.audio_url ? 'audio' : body.video_url ? 'video' : null,
+      excerpt: body.excerpt || body.teaser || body.content.substring(0, 200) + '...',
+      image_url: body.image_url || body.featured_image,
+      audio_url: body.audio_url,
+      video_url: body.video_url,
+      external_links: body.external_links || [],
       hashtags: body.hashtags || [],
       status: body.status || 'draft',
-      scheduled_at: body.scheduled_at || null,
-      published_at: body.status === 'published' ? new Date().toISOString() : null,
     };
+
+    // Only add scheduled_at if it has a value
+    if (body.scheduled_at && body.status === 'scheduled') {
+      articleData.scheduled_at = body.scheduled_at;
+    }
+
+    // Only add published_at if status is published
+    if (body.status === 'published') {
+      articleData.published_at = new Date().toISOString();
+    }
 
     const { data, error } = await supabase
       .from(TABLES.ARTICLES)

@@ -7,11 +7,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const TABLES = {
   ARTICLES: 'twnty_articles',
-  COMMENTS: 'comments',
+  COMMENTS: 'twnty_comments',
   LIKES: 'twnty_likes',
   SETTINGS: 'twnty_settings',
   AUTHOR: 'twnty_author',
-  VISITORS: 'visitors',
+  VISITORS: 'twnty_visitors',
+  ADMIN_USERS: 'twnty_users',
 };
 
 // Check if Supabase is properly configured

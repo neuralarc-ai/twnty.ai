@@ -15,10 +15,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { apiKey, topic } = await request.json();
+    const { topic } = await request.json();
 
-    if (!apiKey || !topic) {
-      return NextResponse.json({ error: 'API key and topic are required' }, { status: 400 });
+    if (!topic) {
+      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+    }
+
+    // Get API key from environment variables
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json({ 
+        error: 'Gemini API key is not configured. Please add NEXT_PUBLIC_GEMINI_API_KEY to your .env.local file.' 
+      }, { status: 500 });
     }
 
     const result = await generateArticleWithGemini(apiKey, topic);

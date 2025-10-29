@@ -29,7 +29,12 @@ async function getPublishedArticles() {
       return [];
     }
 
-    return data || [];
+    // Map database column names to frontend-friendly names
+    return (data || []).map(article => ({
+      ...article,
+      featured_image: article.image_url,
+      teaser: article.excerpt,
+    }));
   } catch (error) {
     console.error('Error fetching articles:', error);
     return [];

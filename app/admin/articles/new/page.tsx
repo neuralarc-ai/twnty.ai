@@ -15,7 +15,6 @@ export default function NewArticlePage() {
   const [showAIModal, setShowAIModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [geminiApiKey, setGeminiApiKey] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -33,18 +32,6 @@ export default function NewArticlePage() {
   const [newLink, setNewLink] = useState('');
   const [newHashtag, setNewHashtag] = useState('');
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-
-  useEffect(() => {
-    // Fetch Gemini API key from settings
-    fetch('/api/admin/settings?key=gemini_api_key')
-      .then(res => res.json())
-      .then(data => {
-        if (data.value) {
-          setGeminiApiKey(data.value);
-        }
-      })
-      .catch(console.error);
-  }, []);
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -67,18 +54,12 @@ export default function NewArticlePage() {
       return;
     }
 
-    if (!geminiApiKey) {
-      alert('Please configure Gemini API key in Settings first');
-      return;
-    }
-
     setGenerating(true);
     try {
       const response = await fetch('/api/admin/generate-article', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          apiKey: geminiApiKey,
           topic: aiPrompt 
         }),
       });
@@ -540,20 +521,14 @@ export default function NewArticlePage() {
                 />
               </div>
 
-              {!geminiApiKey ? (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 text-sm rounded">
-                  Please configure your Gemini API key in Settings first.
-                </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 text-sm rounded">
-                  ✨ AI will generate a fully formatted article with HTML, including headings, bold text, lists, and proper spacing - ready to publish!
-                </div>
-              )}
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 text-sm rounded">
+                ✨ AI will generate a fully formatted article with HTML, including headings, bold text, lists, and proper spacing - ready to publish!
+              </div>
 
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleGenerateWithAI}
-                  disabled={generating || !geminiApiKey}
+                  disabled={generating}
                   className="flex-1 px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 font-medium"
                 >
                   {generating ? 'Generating...' : 'Generate Article'}

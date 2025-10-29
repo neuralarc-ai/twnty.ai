@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 
 async function checkAuth() {
@@ -29,13 +28,26 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now();
     const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filepath = join(process.cwd(), 'public', 'uploads', filename);
 
-    await writeFile(filepath, buffer);
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('article-images')
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false
+      });
 
-    const url = `/uploads/${filename}`;
+    if (error) {
+      console.error('Supabase storage error:', error);
+      return NextResponse.json({ error: 'Failed to upload to storage' }, { status: 500 });
+    }
 
-    return NextResponse.json({ url });
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('article-images')
+      .getPublicUrl(filename);
+
+    return NextResponse.json({ url: publicUrl });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });

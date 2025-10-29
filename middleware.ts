@@ -29,7 +29,8 @@ export function middleware(request: NextRequest) {
     }
   } else {
     // Public domain (twnty.ai): block direct access to admin routes
-    if (url.pathname.startsWith('/admin')) {
+    // EXCEPT for the login page which is allowed
+    if (url.pathname.startsWith('/admin') && url.pathname !== '/admin/login') {
       // Redirect to homepage with error message or just redirect to home
       url.pathname = '/';
       return NextResponse.redirect(url);

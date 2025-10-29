@@ -29,7 +29,12 @@ async function getArticle(id: string) {
     .update({ views: (data.views || 0) + 1 })
     .eq('id', id);
 
-  return data;
+  // Map database column names to frontend-friendly names
+  return {
+    ...data,
+    featured_image: data.image_url,
+    teaser: data.excerpt,
+  };
 }
 
 export const revalidate = 0;

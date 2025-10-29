@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, TABLES } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 
 async function checkAuth() {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // In production, use proper password hashing (bcrypt, argon2, etc.)
     const { data, error } = await supabase
-      .from('admin_users')
+      .from(TABLES.ADMIN_USERS)
       .insert({
         email,
         password_hash: password, // In production, hash this!

@@ -26,7 +26,14 @@ export async function GET(
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    // Map database column names to frontend-friendly names
+    const mappedData = {
+      ...data,
+      featured_image: data.image_url,
+      teaser: data.excerpt,
+    };
+
+    return NextResponse.json(mappedData);
   } catch (error) {
     console.error('Error fetching article:', error);
     return NextResponse.json({ error: 'Failed to fetch article' }, { status: 500 });
@@ -48,15 +55,20 @@ export async function PUT(
     const updateData: any = {
       title: body.title,
       content: body.content,
-      teaser: body.excerpt || body.teaser,
-      featured_image: body.image_url || body.featured_image,
-      media_url: body.audio_url || body.video_url || body.media_url,
-      media_type: body.audio_url ? 'audio' : body.video_url ? 'video' : body.media_type,
+      excerpt: body.excerpt || body.teaser,
+      image_url: body.image_url || body.featured_image,
+      audio_url: body.audio_url,
+      video_url: body.video_url,
+      external_links: body.external_links,
       hashtags: body.hashtags || [],
       status: body.status,
-      scheduled_at: body.scheduled_at || null,
       updated_at: new Date().toISOString(),
     };
+
+    // Only add scheduled_at if it has a value
+    if (body.scheduled_at && body.status === 'scheduled') {
+      updateData.scheduled_at = body.scheduled_at;
+    }
 
     // Set published_at if status is being changed to published
     if (body.status === 'published') {
