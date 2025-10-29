@@ -11,16 +11,16 @@
 For each published article, the cron job adds:
 
 ### 1. **Likes**
-- **Amount:** 1 like per article
-- **Probability:** 80% chance per article per run
-- **Expected per day:** ~0.8 likes per article
-- **Range:** 0-1 likes per article per day
+- **Amount:** Random between 20-30 likes per article
+- **Probability:** 100% (always added)
+- **Expected per day:** ~25 likes per article (average of 20-30)
+- **Range:** 20-30 likes per article per day
 
 ### 2. **Comments**
-- **Amount:** 1 comment per article
-- **Probability:** 80% chance per article per run
-- **Expected per day:** ~0.8 comments per article
-- **Range:** 0-1 comments per article per day
+- **Amount:** Random between 10-15 comments per article
+- **Probability:** 100% (always added)
+- **Expected per day:** ~12.5 comments per article (average of 10-15)
+- **Range:** 10-15 comments per article per day
 - **Comments are realistic:** Uses 15 different templates with random names and emails
 
 ### 3. **Views**
@@ -33,15 +33,15 @@ For each published article, the cron job adds:
 
 If you have **5 published articles**:
 
-- **Likes:** 5 × 0.8 = **~4 likes per day** (0-5 range)
-- **Comments:** 5 × 0.8 = **~4 comments per day** (0-5 range)
+- **Likes:** 5 × 25 = **~125 likes per day** (100-150 range)
+- **Comments:** 5 × 12.5 = **~62 comments per day** (50-75 range)
 - **Views:** 5 × 15 = **~75 views per day** (50-100 range)
 
 ## 📅 Monthly Projections
 
 For 5 published articles over 30 days:
-- **Likes:** ~120 likes/month
-- **Comments:** ~120 comments/month
+- **Likes:** ~3,750 likes/month (3,000-4,500 range)
+- **Comments:** ~1,875 comments/month (1,500-2,250 range)
 - **Views:** ~2,250 views/month
 
 ## 🆓 Vercel Free Tier (Hobby Plan) Limits
@@ -111,14 +111,14 @@ for (let i = 0; i < articles.length; i += batchSize) {
 
 | Metric | Per Article Per Day | Notes |
 |--------|-------------------|-------|
-| **Likes** | ~0.8 (80% chance) | Random |
-| **Comments** | ~0.8 (80% chance) | Realistic templates |
-| **Views** | 10-20 (100% chance) | Random range |
+| **Likes** | 20-30 (always) | Random range |
+| **Comments** | 10-15 (always) | Realistic templates |
+| **Views** | 10-20 (always) | Random range |
 
 **Per Day Total (5 articles):**
-- Likes: ~4
-- Comments: ~4  
-- Views: ~75
+- Likes: 100-150 (avg: ~125)
+- Comments: 50-75 (avg: ~62)
+- Views: 50-100 (avg: ~75)
 
 ## 💡 Optimization Tips
 
@@ -132,13 +132,18 @@ for (let i = 0; i < articles.length; i += batchSize) {
 To adjust the engagement amounts, edit `app/api/cron/boost-engagement/route.ts`:
 
 ```typescript
-// Line 226-227: Likes probability
-const shouldAddLike = Math.random() > 0.2; // Change 0.2 to adjust (0.2 = 80% chance)
+// Line 225: Likes range (currently 20-30)
+const likesBoost = Math.floor(Math.random() * 11) + 20; 
+// Change 20 = minimum, 11 = range (so 20-30 = 20 + 0-10)
+// Example: For 10-20 likes, use: Math.floor(Math.random() * 11) + 10
 
-// Line 231: Comments probability  
-const shouldAddComment = Math.random() > 0.2; // Same adjustment
+// Line 228: Comments range (currently 10-15)
+const commentsToAdd = Math.floor(Math.random() * 6) + 10;
+// Change 10 = minimum, 6 = range (so 10-15 = 10 + 0-5)
+// Example: For 5-10 comments, use: Math.floor(Math.random() * 6) + 5
 
-// Line 234: Views range
-const viewsBoost = Math.floor(Math.random() * 11) + 10; // Change 10 and 11 for range
+// Line 231: Views range (currently 10-20)
+const viewsBoost = Math.floor(Math.random() * 11) + 10;
+// Change 10 = minimum, 11 = range (so 10-20 = 10 + 0-10)
 ```
 

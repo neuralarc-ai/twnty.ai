@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
       .from(TABLES.ARTICLES)
       .select('id, title, views, likes')
       .eq('status', 'published');
-    
+
     fetchedArticles = initialResult.data;
     fetchError = initialResult.error;
 
@@ -221,14 +221,11 @@ export async function GET(request: NextRequest) {
     // Update each article with gradual boosts
     const updates = articles.map(async (article) => {
       try {
-      // Add 1 like per article (80% chance to add, so not every run adds to all)
-      // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
-      const shouldAddLike = Math.random() > 0.2; // 80% chance
-      const likesBoost = shouldAddLike ? 1 : 0;
+      // Add 20-30 likes per article per day
+      const likesBoost = Math.floor(Math.random() * 11) + 20; // 20-30 likes
 
-      // Add 1 comment (80% chance per article per run)
-      // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
-      const shouldAddComment = Math.random() > 0.2; // 80% chance
+      // Add 10-15 comments per article per day
+      const commentsToAdd = Math.floor(Math.random() * 6) + 10; // 10-15 comments
       
       // Add some views (10-20 per run)
       const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
@@ -248,13 +245,13 @@ export async function GET(request: NextRequest) {
         
         // Only update if we have something to update
         if (Object.keys(updateData).length > 0) {
-          const { error: updateError } = await supabase
-            .from(TABLES.ARTICLES)
+        const { error: updateError } = await supabase
+          .from(TABLES.ARTICLES)
             .update(updateData)
-            .eq('id', article.id);
-          
-          if (updateError) {
-            console.error(`Error updating article ${article.id}:`, updateError);
+          .eq('id', article.id);
+        
+        if (updateError) {
+          console.error(`Error updating article ${article.id}:`, updateError);
             throw new Error(`Failed to update article ${article.id}: ${updateError.message || JSON.stringify(updateError)}`);
           }
         }
@@ -263,8 +260,8 @@ export async function GET(request: NextRequest) {
         console.warn(`Skipping engagement update for article ${article.id} - views and likes columns not available`);
       }
 
-      // Add comment if selected
-      if (shouldAddComment) {
+      // Add multiple comments (10-15 per article)
+      for (let i = 0; i < commentsToAdd; i++) {
         const randomName = names[Math.floor(Math.random() * names.length)];
         const randomEmail = generateRandomEmail(randomName);
         const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
@@ -279,11 +276,11 @@ export async function GET(request: NextRequest) {
           });
         
         if (commentError) {
-          console.error(`Error inserting comment for article ${article.id}:`, commentError);
-            throw new Error(`Failed to insert comment for article ${article.id}: ${commentError.message || JSON.stringify(commentError)}`);
+          console.error(`Error inserting comment ${i+1}/${commentsToAdd} for article ${article.id}:`, commentError);
+          // Continue with other comments even if one fails
+        } else {
+          commentsAdded++;
         }
-        
-        commentsAdded++;
       }
 
       likesAdded += likesBoost;
