@@ -101,48 +101,111 @@ export async function GET(request: NextRequest) {
     console.log('Supabase client created, fetching articles...');
 
     // Get all published articles
-    // Try to select views column, but handle if it doesn't exist
+    // Dynamically detect which columns exist (views, likes)
     let articles: any[] = [];
-    let hasViewsColumn = true;
+    let hasViewsColumn = false;
+    let hasLikesColumn = false;
     
-    const { data: articlesWithViews, error: viewsError } = await supabase
+    console.log('Attempting to fetch articles...');
+    
+    // Try to fetch with both views and likes first
+    let fetchedArticles: any[] | null = null;
+    let fetchError: any = null;
+    
+    const initialResult = await supabase
       .from(TABLES.ARTICLES)
       .select('id, title, views, likes')
       .eq('status', 'published');
+    
+    fetchedArticles = initialResult.data;
+    fetchError = initialResult.error;
 
-    if (viewsError) {
-      // Check if error is due to missing views column
-      // Cast to any to access Supabase error properties
-      const err = viewsError as any;
+    if (fetchError) {
+      const err = fetchError as any;
       const errorCode = err?.code;
-      const errorMessage = err?.message || '';
-      const isViewsError = errorCode === '42703' || 
-                          errorMessage.includes('does not exist') ||
-                          errorMessage.includes('views');
+      const errorMessage = String(err?.message || '').toLowerCase();
       
-      if (isViewsError) {
-        console.warn('Views column does not exist, fetching articles without views');
-        hasViewsColumn = false;
+      // Check if it's a column missing error
+      if (errorCode === '42703' && errorMessage.includes('does not exist')) {
+        const missingViews = errorMessage.includes('views');
+        const missingLikes = errorMessage.includes('likes');
         
-        // Try again without views column
-        const { data: articlesWithoutViews, error: noViewsError } = await supabase
-          .from(TABLES.ARTICLES)
-          .select('id, title, likes')
-          .eq('status', 'published');
+        console.warn('Column check:', { missingViews, missingLikes });
         
-        if (noViewsError) {
-          console.error('Supabase query error:', noViewsError);
-          throw noViewsError;
+        // Try fetching with just likes (if views is missing)
+        if (missingViews && !missingLikes) {
+          console.log('Retrying with likes only (no views column)...');
+          const result = await supabase
+            .from(TABLES.ARTICLES)
+            .select('id, title, likes')
+            .eq('status', 'published');
+          
+          fetchedArticles = result.data;
+          fetchError = result.error;
+          
+          if (!fetchError) {
+            hasViewsColumn = false;
+            hasLikesColumn = true;
+          }
         }
         
-        articles = (articlesWithoutViews || []).map((a: any) => ({ ...a, views: 0 }));
+        // Try fetching with just views (if likes is missing)
+        if (fetchError && missingLikes && !missingViews) {
+          console.log('Retrying with views only (no likes column)...');
+          const result = await supabase
+            .from(TABLES.ARTICLES)
+            .select('id, title, views')
+            .eq('status', 'published');
+          
+          fetchedArticles = result.data;
+          fetchError = result.error;
+          
+          if (!fetchError) {
+            hasViewsColumn = true;
+            hasLikesColumn = false;
+          }
+        }
+        
+        // Try fetching with minimal columns (both missing)
+        if (fetchError && missingViews && missingLikes) {
+          console.log('Retrying with minimal columns (no views or likes)...');
+          const result = await supabase
+            .from(TABLES.ARTICLES)
+            .select('id, title')
+            .eq('status', 'published');
+          
+          fetchedArticles = result.data;
+          fetchError = result.error;
+          
+          if (!fetchError) {
+            hasViewsColumn = false;
+            hasLikesColumn = false;
+          }
+        }
+        
+        if (fetchError) {
+          console.error('Failed to fetch articles:', fetchError);
+          throw fetchError;
+        }
       } else {
-        console.error('Supabase query error:', viewsError);
-        throw viewsError;
+        // Not a column error, throw it
+        console.error('Supabase query error (not column related):', fetchError);
+        throw fetchError;
       }
     } else {
-      articles = articlesWithViews || [];
+      // Successfully fetched with both columns
+      hasViewsColumn = true;
+      hasLikesColumn = true;
     }
+    
+    // Normalize articles with default values
+    articles = (fetchedArticles || []).map((a: any) => ({
+      ...a,
+      views: hasViewsColumn ? (a.views ?? 0) : 0,
+      likes: hasLikesColumn ? (a.likes ?? 0) : 0
+    }));
+    
+    console.log(`Fetched ${articles.length} articles (hasViews: ${hasViewsColumn}, hasLikes: ${hasLikesColumn})`);
 
     if (!articles || articles.length === 0) {
       console.log('No published articles found');
@@ -170,23 +233,20 @@ export async function GET(request: NextRequest) {
       // Add some views (10-20 per run)
       const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
 
-      // Update likes and views
-      // Only update if there's something to update
-      if (likesBoost > 0 || viewsBoost > 0) {
+      // Update likes and views (only if columns exist)
+      // Only update if there's something to update and column exists
+      if ((likesBoost > 0 && hasLikesColumn) || (viewsBoost > 0 && hasViewsColumn)) {
         const updateData: any = {};
         
-        if (likesBoost > 0) {
+        if (likesBoost > 0 && hasLikesColumn) {
           updateData.likes = (article.likes || 0) + likesBoost;
         }
         
-        // Only update views if the column exists (graceful fallback)
         if (viewsBoost > 0 && hasViewsColumn) {
           updateData.views = (article.views || 0) + viewsBoost;
-        } else if (viewsBoost > 0 && !hasViewsColumn) {
-          // Column doesn't exist - skip views update but continue
-          console.warn(`Views column not available, skipping views update for article ${article.id}`);
         }
         
+        // Only update if we have something to update
         if (Object.keys(updateData).length > 0) {
           const { error: updateError } = await supabase
             .from(TABLES.ARTICLES)
@@ -198,6 +258,9 @@ export async function GET(request: NextRequest) {
             throw new Error(`Failed to update article ${article.id}: ${updateError.message || JSON.stringify(updateError)}`);
           }
         }
+      } else {
+        // Both columns missing - can't update engagement stats
+        console.warn(`Skipping engagement update for article ${article.id} - views and likes columns not available`);
       }
 
       // Add comment if selected
