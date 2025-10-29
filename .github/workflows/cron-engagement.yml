@@ -1,0 +1,31 @@
+name: Boost Blog Engagement
+
+on:
+  schedule:
+    # Runs every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  boost-engagement:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Engagement Boost API
+        run: |
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_CODE:.*//')
+          
+          echo "Response Code: $HTTP_CODE"
+          echo "Response Body: $BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error: API returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
