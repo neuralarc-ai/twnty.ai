@@ -12,16 +12,16 @@ async function getAuthorInfo() {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from(TABLES.AUTHOR)
-      .select('*')
-      .single();
+  const { data, error } = await supabase
+    .from(TABLES.AUTHOR)
+    .select('*')
+    .single();
 
-    if (error || !data) {
-      return null;
-    }
+  if (error || !data) {
+    return null;
+  }
 
-    return data;
+  return data;
   } catch (error) {
     console.error('Error fetching author info:', error);
     return null;

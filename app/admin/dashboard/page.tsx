@@ -15,16 +15,16 @@ async function getAllArticles() {
     }
 
     const { data: articles, error } = await supabase
-      .from(TABLES.ARTICLES)
-      .select('*')
-      .order('created_at', { ascending: false });
+    .from(TABLES.ARTICLES)
+    .select('*')
+    .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching articles:', error);
       return [];
     }
 
-    return articles || [];
+  return articles || [];
   } catch (error) {
     console.error('Error fetching articles:', error);
     return [];
@@ -39,17 +39,17 @@ async function getRecentArticles() {
     }
 
     const { data: recentArticles, error } = await supabase
-      .from(TABLES.ARTICLES)
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);
+    .from(TABLES.ARTICLES)
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(5);
 
     if (error) {
       console.error('Error fetching recent articles:', error);
       return [];
     }
 
-    return recentArticles || [];
+  return recentArticles || [];
   } catch (error) {
     console.error('Error fetching recent articles:', error);
     return [];

@@ -18,30 +18,30 @@ async function getArticle(id: string) {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from(TABLES.ARTICLES)
-      .select('*')
-      .eq('id', id)
-      .eq('status', 'published')
-      .single();
+  const { data, error } = await supabase
+    .from(TABLES.ARTICLES)
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'published')
+    .single();
 
-    if (error || !data) {
-      return null;
-    }
+  if (error || !data) {
+    return null;
+  }
 
     // Increment view count (fire and forget, don't await)
     supabase
-      .from(TABLES.ARTICLES)
-      .update({ views: (data.views || 0) + 1 })
+    .from(TABLES.ARTICLES)
+    .update({ views: (data.views || 0) + 1 })
       .eq('id', id)
       .then(() => {}, (err) => console.error('Error updating view count:', err));
 
-    // Map database column names to frontend-friendly names
-    return {
-      ...data,
-      featured_image: data.image_url,
-      teaser: data.excerpt,
-    };
+  // Map database column names to frontend-friendly names
+  return {
+    ...data,
+    featured_image: data.image_url,
+    teaser: data.excerpt,
+  };
   } catch (error) {
     console.error('Error fetching article:', error);
     return null;

@@ -13,17 +13,17 @@ async function getArticles() {
       return [];
     }
 
-    const { data, error } = await supabase
-      .from(TABLES.ARTICLES)
-      .select('*')
-      .order('created_at', { ascending: false });
+  const { data, error } = await supabase
+    .from(TABLES.ARTICLES)
+    .select('*')
+    .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching articles:', error);
-      return [];
-    }
+  if (error) {
+    console.error('Error fetching articles:', error);
+    return [];
+  }
 
-    return data || [];
+  return data || [];
   } catch (error) {
     console.error('Error fetching articles:', error);
     return [];

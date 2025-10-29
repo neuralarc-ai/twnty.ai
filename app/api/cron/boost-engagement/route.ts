@@ -48,22 +48,36 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Vercel Cron Jobs automatically authenticate via internal headers
-    // For external callers, we can optionally check CRON_SECRET
-    // This makes it work with both Vercel Cron and external services
+    // Vercel Cron Jobs: Check for Vercel's cron authorization header
+    // Vercel automatically sends "x-vercel-cron" header for internal cron jobs
+    const vercelCronHeader = request.headers.get('x-vercel-cron');
+    
+    // Also support external cron services via CRON_SECRET
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
     const cronSecret = process.env.CRON_SECRET;
     
-    // If CRON_SECRET is set, verify it (for external callers)
-    // Vercel Cron calls don't need this check as they're automatically authenticated
-    if (cronSecret) {
-      if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-        console.error('Unauthorized cron request', { 
+    // If using Vercel Cron, x-vercel-cron header is present
+    // Otherwise, verify CRON_SECRET for external services
+    if (!vercelCronHeader) {
+      // External cron service - require CRON_SECRET
+      if (!cronSecret) {
+        console.error('CRON_SECRET not configured for external cron');
+        return NextResponse.json({ 
+          error: 'CRON_SECRET not configured',
+          message: 'CRON_SECRET environment variable is missing'
+        }, { status: 500 });
+      }
+      
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.error('Unauthorized external cron request', { 
           hasHeader: !!authHeader,
-          headerLength: authHeader?.length || 0
+          headerLength: authHeader?.length || 0,
+          secretLength: cronSecret?.length || 0
         });
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+    } else {
+      console.log('Vercel cron job detected');
     }
 
     // Verify Supabase configuration
@@ -111,59 +125,59 @@ export async function GET(request: NextRequest) {
     // Update each article with gradual boosts
     const updates = articles.map(async (article) => {
       try {
-        // Add 1 like per article (80% chance to add, so not every run adds to all)
-        // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
-        const shouldAddLike = Math.random() > 0.2; // 80% chance
-        const likesBoost = shouldAddLike ? 1 : 0;
+      // Add 1 like per article (80% chance to add, so not every run adds to all)
+      // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
+      const shouldAddLike = Math.random() > 0.2; // 80% chance
+      const likesBoost = shouldAddLike ? 1 : 0;
 
-        // Add 1 comment (80% chance per article per run)
-        // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
-        const shouldAddComment = Math.random() > 0.2; // 80% chance
+      // Add 1 comment (80% chance per article per run)
+      // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
+      const shouldAddComment = Math.random() > 0.2; // 80% chance
+      
+      // Add some views (10-20 per run)
+      const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
+
+      // Update likes and views
+      if (likesBoost > 0 || viewsBoost > 0) {
+        const { error: updateError } = await supabase
+          .from(TABLES.ARTICLES)
+          .update({
+            likes: (article.likes || 0) + likesBoost,
+            views: (article.views || 0) + viewsBoost,
+          })
+          .eq('id', article.id);
         
-        // Add some views (10-20 per run)
-        const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
-
-        // Update likes and views
-        if (likesBoost > 0 || viewsBoost > 0) {
-          const { error: updateError } = await supabase
-            .from(TABLES.ARTICLES)
-            .update({
-              likes: (article.likes || 0) + likesBoost,
-              views: (article.views || 0) + viewsBoost,
-            })
-            .eq('id', article.id);
-          
-          if (updateError) {
-            console.error(`Error updating article ${article.id}:`, updateError);
+        if (updateError) {
+          console.error(`Error updating article ${article.id}:`, updateError);
             throw new Error(`Failed to update article ${article.id}: ${updateError.message || JSON.stringify(updateError)}`);
-          }
         }
+      }
 
-        // Add comment if selected
-        if (shouldAddComment) {
-          const randomName = names[Math.floor(Math.random() * names.length)];
-          const randomEmail = generateRandomEmail(randomName);
-          const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
-          
-          const { error: commentError } = await supabase
-            .from(TABLES.COMMENTS)
-            .insert({
-              article_id: article.id,
-              author_name: randomName,
-              author_email: randomEmail,
-              content: randomComment,
-            });
-          
-          if (commentError) {
-            console.error(`Error inserting comment for article ${article.id}:`, commentError);
+      // Add comment if selected
+      if (shouldAddComment) {
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomEmail = generateRandomEmail(randomName);
+        const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
+        
+        const { error: commentError } = await supabase
+          .from(TABLES.COMMENTS)
+          .insert({
+            article_id: article.id,
+            author_name: randomName,
+            author_email: randomEmail,
+            content: randomComment,
+          });
+        
+        if (commentError) {
+          console.error(`Error inserting comment for article ${article.id}:`, commentError);
             throw new Error(`Failed to insert comment for article ${article.id}: ${commentError.message || JSON.stringify(commentError)}`);
-          }
-          
-          commentsAdded++;
         }
+        
+        commentsAdded++;
+      }
 
-        likesAdded += likesBoost;
-        viewsAdded += viewsBoost;
+      likesAdded += likesBoost;
+      viewsAdded += viewsBoost;
       } catch (err) {
         // Wrap individual article errors so Promise.all doesn't fail completely
         console.error(`Error processing article ${article.id}:`, err);
@@ -172,7 +186,7 @@ export async function GET(request: NextRequest) {
     });
 
     try {
-      await Promise.all(updates);
+    await Promise.all(updates);
     } catch (err) {
       console.error('Error in Promise.all(updates):', err);
       throw err;
@@ -198,9 +212,7 @@ export async function GET(request: NextRequest) {
     // Log the raw error first
     console.error('Raw error boosting engagement:', error);
     console.error('Error type:', typeof error);
-    if (error && typeof error === 'object') {
-      console.error('Error constructor:', (error as any).constructor?.name);
-    }
+    console.error('Error constructor:', error?.constructor?.name);
     
     // Better error extraction for various error types
     let errorMessage = 'Unknown error occurred';
@@ -220,8 +232,8 @@ export async function GET(request: NextRequest) {
     } else if (typeof error === 'object') {
       // Handle Supabase errors and other object errors
       const err = error as any;
-      errorCode = err.code || err.error_code || 'UNKNOWN';
-      errorMessage = err.message || err.error_description || err.details || err.hint || 'Database operation failed';
+      errorCode = err.code || err.error_code || err.error_code || 'UNKNOWN';
+      errorMessage = err.message || err.error_description || err.details || err.hint || err.toString() || 'Database operation failed';
       
       // Extract Supabase-specific error info
       if (err.hint) {
@@ -246,12 +258,23 @@ export async function GET(request: NextRequest) {
     }
     
     // Always include full error info in response for debugging
-    return NextResponse.json({ 
+    // Use consistent error response format
+    const errorResponse: any = {
       error: 'Failed to boost engagement',
       message: errorMessage,
-      code: errorCode || 'UNKNOWN_ERROR',
-      details: errorDetails || { raw: String(error) },
       timestamp: new Date().toISOString()
-    }, { status: 500 });
+    };
+    
+    if (errorCode) {
+      errorResponse.code = errorCode;
+    }
+    
+    if (errorDetails) {
+      errorResponse.details = errorDetails;
+    } else if (error !== null && error !== undefined) {
+      errorResponse.details = { raw: String(error) };
+    }
+    
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
