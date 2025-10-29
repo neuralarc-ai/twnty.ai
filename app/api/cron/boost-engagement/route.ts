@@ -54,10 +54,19 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
     
     if (!cronSecret) {
-      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+      console.error('CRON_SECRET not configured');
+      return NextResponse.json({ 
+        error: 'CRON_SECRET not configured',
+        message: 'CRON_SECRET environment variable is missing'
+      }, { status: 500 });
     }
     
     if (authHeader !== `Bearer ${cronSecret}`) {
+      console.error('Unauthorized cron request', { 
+        hasHeader: !!authHeader,
+        headerLength: authHeader?.length || 0,
+        secretLength: cronSecret.length
+      });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -66,14 +75,20 @@ export async function GET(request: NextRequest) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://placeholder.supabase.co') {
+      console.error('Supabase not configured', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        urlValue: supabaseUrl?.substring(0, 30) + '...'
+      });
       return NextResponse.json({ 
         error: 'Supabase not configured',
-        details: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid'
+        message: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid'
       }, { status: 500 });
     }
 
     // Create a fresh Supabase client with verified credentials
     const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Supabase client created, fetching articles...');
 
     // Get all published articles
     const { data: articles, error } = await supabase
@@ -81,11 +96,17 @@ export async function GET(request: NextRequest) {
       .select('id, title, views, likes')
       .eq('status', 'published');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
 
     if (!articles || articles.length === 0) {
+      console.log('No published articles found');
       return NextResponse.json({ message: 'No articles to update' });
     }
+
+    console.log(`Processing ${articles.length} published articles`);
 
     let likesAdded = 0;
     let commentsAdded = 0;
@@ -93,62 +114,80 @@ export async function GET(request: NextRequest) {
 
     // Update each article with gradual boosts
     const updates = articles.map(async (article) => {
-      // Add 1 like per article (80% chance to add, so not every run adds to all)
-      // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
-      const shouldAddLike = Math.random() > 0.2; // 80% chance
-      const likesBoost = shouldAddLike ? 1 : 0;
+      try {
+        // Add 1 like per article (80% chance to add, so not every run adds to all)
+        // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
+        const shouldAddLike = Math.random() > 0.2; // 80% chance
+        const likesBoost = shouldAddLike ? 1 : 0;
 
-      // Add 1 comment (80% chance per article per run)
-      // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
-      const shouldAddComment = Math.random() > 0.2; // 80% chance
-      
-      // Add some views (10-20 per run)
-      const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
-
-      // Update likes and views
-      if (likesBoost > 0 || viewsBoost > 0) {
-        const { error: updateError } = await supabase
-          .from(TABLES.ARTICLES)
-          .update({
-            likes: (article.likes || 0) + likesBoost,
-            views: (article.views || 0) + viewsBoost,
-          })
-          .eq('id', article.id);
+        // Add 1 comment (80% chance per article per run)
+        // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
+        const shouldAddComment = Math.random() > 0.2; // 80% chance
         
-        if (updateError) {
-          console.error(`Error updating article ${article.id}:`, updateError);
-          throw updateError;
+        // Add some views (10-20 per run)
+        const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
+
+        // Update likes and views
+        if (likesBoost > 0 || viewsBoost > 0) {
+          const { error: updateError } = await supabase
+            .from(TABLES.ARTICLES)
+            .update({
+              likes: (article.likes || 0) + likesBoost,
+              views: (article.views || 0) + viewsBoost,
+            })
+            .eq('id', article.id);
+          
+          if (updateError) {
+            console.error(`Error updating article ${article.id}:`, updateError);
+            throw new Error(`Failed to update article ${article.id}: ${updateError.message || JSON.stringify(updateError)}`);
+          }
         }
-      }
 
-      // Add comment if selected
-      if (shouldAddComment) {
-        const randomName = names[Math.floor(Math.random() * names.length)];
-        const randomEmail = generateRandomEmail(randomName);
-        const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
-        
-        const { error: commentError } = await supabase
-          .from(TABLES.COMMENTS)
-          .insert({
-            article_id: article.id,
-            author_name: randomName,
-            author_email: randomEmail,
-            content: randomComment,
-          });
-        
-        if (commentError) {
-          console.error(`Error inserting comment for article ${article.id}:`, commentError);
-          throw commentError;
+        // Add comment if selected
+        if (shouldAddComment) {
+          const randomName = names[Math.floor(Math.random() * names.length)];
+          const randomEmail = generateRandomEmail(randomName);
+          const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
+          
+          const { error: commentError } = await supabase
+            .from(TABLES.COMMENTS)
+            .insert({
+              article_id: article.id,
+              author_name: randomName,
+              author_email: randomEmail,
+              content: randomComment,
+            });
+          
+          if (commentError) {
+            console.error(`Error inserting comment for article ${article.id}:`, commentError);
+            throw new Error(`Failed to insert comment for article ${article.id}: ${commentError.message || JSON.stringify(commentError)}`);
+          }
+          
+          commentsAdded++;
         }
-        
-        commentsAdded++;
-      }
 
-      likesAdded += likesBoost;
-      viewsAdded += viewsBoost;
+        likesAdded += likesBoost;
+        viewsAdded += viewsBoost;
+      } catch (err) {
+        // Wrap individual article errors so Promise.all doesn't fail completely
+        console.error(`Error processing article ${article.id}:`, err);
+        throw err;
+      }
     });
 
-    await Promise.all(updates);
+    try {
+      await Promise.all(updates);
+    } catch (err) {
+      console.error('Error in Promise.all(updates):', err);
+      throw err;
+    }
+    
+    console.log('Engagement boost completed', {
+      articlesUpdated: articles.length,
+      likesAdded,
+      commentsAdded,
+      viewsAdded
+    });
 
     return NextResponse.json({ 
       success: true, 
@@ -159,31 +198,36 @@ export async function GET(request: NextRequest) {
       viewsAdded
     });
 
-  } catch (error) {
-    console.error('Error boosting engagement:', error);
+  } catch (error: unknown) {
+    // Log the raw error first
+    console.error('Raw error boosting engagement:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
     
     // Better error extraction for various error types
-    let errorMessage = 'Unknown error';
+    let errorMessage = 'Unknown error occurred';
     let errorCode: string | undefined;
     let errorDetails: any = null;
     
-    if (error instanceof Error) {
-      errorMessage = error.message || error.name || 'Unknown error';
+    if (error === null || error === undefined) {
+      errorMessage = 'Error is null or undefined';
+    } else if (error instanceof Error) {
+      errorMessage = error.message || error.name || 'Error occurred';
       errorCode = error.name;
       errorDetails = {
         name: error.name,
         message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        stack: error.stack
       };
-    } else if (typeof error === 'object' && error !== null) {
+    } else if (typeof error === 'object') {
       // Handle Supabase errors and other object errors
       const err = error as any;
-      errorCode = err.code || err.error_code;
-      errorMessage = err.message || err.error_description || err.details || err.hint || 'Database operation failed';
+      errorCode = err.code || err.error_code || err.error_code || 'UNKNOWN';
+      errorMessage = err.message || err.error_description || err.details || err.hint || err.toString() || 'Database operation failed';
       
       // Extract Supabase-specific error info
       if (err.hint) {
-        errorMessage = `${errorMessage} (Hint: ${err.hint})`;
+        errorMessage = `${errorMessage}. Hint: ${err.hint}`;
       }
       
       errorDetails = {
@@ -192,18 +236,24 @@ export async function GET(request: NextRequest) {
         details: err.details,
         hint: err.hint
       };
+      
+      // Try to stringify for logging
+      try {
+        console.error('Error object details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+      } catch (e) {
+        console.error('Could not stringify error:', e);
+      }
     } else {
       errorMessage = String(error);
     }
     
-    // Log full error for debugging
-    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    
+    // Always include full error info in response for debugging
     return NextResponse.json({ 
       error: 'Failed to boost engagement',
       message: errorMessage,
-      code: errorCode,
-      ...(errorDetails && { details: errorDetails })
+      code: errorCode || 'UNKNOWN_ERROR',
+      details: errorDetails || { raw: String(error) },
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 }
