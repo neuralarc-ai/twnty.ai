@@ -4,7 +4,7 @@ export async function generateArticleWithGemini(
   apiKey: string,
   topic: string,
   additionalContext?: string
-): Promise<{ title: string; content: string; hashtags: string[] }> {
+): Promise<{ title: string; content: string; excerpt: string; hashtags: string[] }> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
@@ -40,16 +40,23 @@ STRUCTURE REQUIREMENTS:
 
 CRITICAL: Output ONLY valid HTML content wrapped in paragraph and heading tags.
 
-Format your response as JSON:
+IMPORTANT: You MUST respond with ONLY valid JSON. Do not include any text before or after the JSON object.
+
+Response format:
 {
-  "title": "Article Title Here",
+  "title": "Write an engaging article title here (no quotes in the title)",
+  "excerpt": "Write a compelling 150-200 word summary here that captures the essence of your article. This excerpt should be engaging, informative, and make readers want to read more. Do not include HTML tags in the excerpt - use plain text only.",
   "content": "<p>First paragraph with engaging introduction...</p><h2>Main Section Title</h2><p>Content paragraph with <strong>important point</strong>...</p><ul><li>First item</li><li>Second item</li></ul>",
   "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
-}`;
+}
+
+Remember: The excerpt must be plain text (no HTML), while content must be HTML formatted.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let text = response.text();
+    
+    console.log('Raw Gemini Response:', text); // Debug log
     
     // Clean the text: remove code blocks, control characters, and extra whitespace
     text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
@@ -61,16 +68,34 @@ Format your response as JSON:
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
-        return {
+        console.log('Parsed JSON from Gemini:', parsed); // Debug log
+        
+        // Generate excerpt if not provided
+        let excerpt = parsed.excerpt;
+        if (!excerpt && parsed.content) {
+          // Strip HTML from content to create excerpt
+          const plainText = parsed.content.replace(/<[^>]*>/g, '');
+          excerpt = plainText.substring(0, 200);
+          if (plainText.length > 200) {
+            excerpt += '...';
+          }
+        }
+        
+        const finalResult = {
           title: parsed.title || topic,
+          excerpt: excerpt || '',
           content: parsed.content || text,
-          hashtags: parsed.hashtags || []
+          hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : []
         };
+        
+        console.log('Returning result:', finalResult); // Debug log
+        return finalResult;
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         // If JSON parsing fails, return the raw text
         return {
           title: topic,
+          excerpt: text.substring(0, 200) + '...',
           content: text,
           hashtags: []
         };
@@ -80,6 +105,7 @@ Format your response as JSON:
     // Fallback if JSON parsing fails
     return {
       title: topic,
+      excerpt: text.substring(0, 200) + '...',
       content: text,
       hashtags: []
     };

@@ -38,7 +38,7 @@ export default function NewArticlePage() {
       setUploadedImage(acceptedFiles[0]);
       // Create preview URL
       const previewUrl = URL.createObjectURL(acceptedFiles[0]);
-      setFormData({ ...formData, featured_image: previewUrl });
+      setFormData(prevData => ({ ...prevData, featured_image: previewUrl }));
     }
   };
 
@@ -66,13 +66,21 @@ export default function NewArticlePage() {
 
       if (response.ok) {
         const data = await response.json();
-        setFormData({
-          ...formData,
-          title: data.title,
-          content: data.content,
-          hashtags: data.hashtags || [],
-          teaser: data.content.substring(0, 200) + '...',
-        });
+        console.log('AI Generated Data:', data); // Debug log
+        
+        // Explicitly set the form data with the generated content
+        setFormData(prevData => ({
+          ...prevData,
+          title: data.title || '',
+          content: data.content || '',
+          hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
+          teaser: data.excerpt || '',
+        }));
+        
+        console.log('Setting form data with title:', data.title);
+        console.log('Setting form data with excerpt:', data.excerpt);
+        console.log('Setting form data with hashtags:', data.hashtags);
+        
         setShowAIModal(false);
         setAiPrompt('');
       } else {
@@ -199,7 +207,7 @@ export default function NewArticlePage() {
             <input
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => setFormData(prevData => ({ ...prevData, title: e.target.value }))}
               required
               className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
               placeholder="Enter article title"
@@ -211,7 +219,7 @@ export default function NewArticlePage() {
             <label className="block text-sm font-medium mb-2">Content *</label>
             <RichTextEditor
               value={formData.content}
-              onChange={(value) => setFormData({ ...formData, content: value })}
+              onChange={(value) => setFormData(prevData => ({ ...prevData, content: value }))}
               placeholder="Start writing your article..."
             />
             <p className="text-sm text-gray-600 mt-2">
@@ -227,7 +235,7 @@ export default function NewArticlePage() {
             <label className="block text-sm font-medium mb-2">Excerpt</label>
             <textarea
               value={formData.teaser}
-              onChange={(e) => setFormData({ ...formData, teaser: e.target.value })}
+              onChange={(e) => setFormData(prevData => ({ ...prevData, teaser: e.target.value }))}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
               placeholder="Brief summary of the article"
@@ -277,7 +285,7 @@ export default function NewArticlePage() {
               <input
                 type="url"
                 value={formData.audio_url}
-                onChange={(e) => setFormData({ ...formData, audio_url: e.target.value })}
+                onChange={(e) => setFormData(prevData => ({ ...prevData, audio_url: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
                 placeholder="https://example.com/audio.mp3"
               />
@@ -291,7 +299,7 @@ export default function NewArticlePage() {
               <input
                 type="url"
                 value={formData.video_url}
-                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                onChange={(e) => setFormData(prevData => ({ ...prevData, video_url: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
                 placeholder="https://example.com/video.mp4"
               />
@@ -387,7 +395,7 @@ export default function NewArticlePage() {
                     type="radio"
                     value="draft"
                     checked={formData.status === 'draft'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onChange={(e) => setFormData(prevData => ({ ...prevData, status: e.target.value as any }))}
                     className="mr-2"
                   />
                   <span>Save as Draft</span>
@@ -397,7 +405,7 @@ export default function NewArticlePage() {
                     type="radio"
                     value="published"
                     checked={formData.status === 'published'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onChange={(e) => setFormData(prevData => ({ ...prevData, status: e.target.value as any }))}
                     className="mr-2"
                   />
                   <span>Publish Now</span>
@@ -407,7 +415,7 @@ export default function NewArticlePage() {
                     type="radio"
                     value="scheduled"
                     checked={formData.status === 'scheduled'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onChange={(e) => setFormData(prevData => ({ ...prevData, status: e.target.value as any }))}
                     className="mr-2"
                   />
                   <span>Schedule</span>
@@ -420,7 +428,7 @@ export default function NewArticlePage() {
                   <input
                     type="datetime-local"
                     value={formData.scheduled_at}
-                    onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                    onChange={(e) => setFormData(prevData => ({ ...prevData, scheduled_at: e.target.value }))}
                     className="px-4 py-2 border border-gray-300 focus:border-black focus:outline-none"
                   />
                 </div>
@@ -451,7 +459,7 @@ export default function NewArticlePage() {
               <button
                 type="button"
                 onClick={() => {
-                  setFormData({ ...formData, status: 'draft' });
+                  setFormData(prevData => ({ ...prevData, status: 'draft' }));
                   setTimeout(() => handleSubmit(new Event('submit') as any), 100);
                 }}
                 disabled={loading || !formData.title || !formData.content}
