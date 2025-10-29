@@ -47,8 +47,10 @@ Response format:
   "title": "Write an engaging article title here (no quotes in the title)",
   "excerpt": "Write a compelling 150-200 word summary here that captures the essence of your article. This excerpt should be engaging, informative, and make readers want to read more. Do not include HTML tags in the excerpt - use plain text only.",
   "content": "<p>First paragraph with engaging introduction...</p><h2>Main Section Title</h2><p>Content paragraph with <strong>important point</strong>...</p><ul><li>First item</li><li>Second item</li></ul>",
-  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5"]
+  "hashtags": ["hashtag1", "hashtag2", "hashtag3", "hashtag4", "hashtag5", "hashtag6", "hashtag7", "hashtag8", "hashtag9", "hashtag10", "hashtag11", "hashtag12", "hashtag13", "hashtag14", "hashtag15"]
 }
+
+IMPORTANT: Generate exactly 10-15 relevant hashtags for optimal SEO. These should be diverse, covering main topics, related concepts, and niche terms. Do not include the # symbol in hashtags.
 
 Remember: The excerpt must be plain text (no HTML), while content must be HTML formatted.`;
 
