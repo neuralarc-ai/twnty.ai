@@ -148,8 +148,8 @@ export default async function ArticlePage({ params }: { params: { id: string } }
           )}
 
           {/* Article Actions */}
-          <div className="flex items-center justify-center gap-6 py-8 border-y border-gray-200">
-            <div className="flex items-center gap-2 h-[42px] text-gray-600">
+          <div className="flex items-center justify-center gap-6 py-8">
+            <div className="flex items-center gap-2 h-[42px] px-5 py-2.5 rounded-lg bg-gray-50 text-gray-600">
               <Eye className="w-5 h-5" />
               <span className="text-sm font-medium">{article.views || 0} views</span>
             </div>

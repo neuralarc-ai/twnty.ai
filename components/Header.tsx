@@ -16,9 +16,14 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="hover:opacity-70 transition-opacity">
-            <div className="text-3xl font-bold tracking-tight" style={{ color: '#000000', fontFamily: 'Georgia, serif' }}>
-              twnty.ai
-            </div>
+            <Image
+              src="/new-logo.png"
+              alt="twnty.ai"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}

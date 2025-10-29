@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
@@ -39,8 +40,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link href="/admin/dashboard" className="text-xl font-serif font-bold">
-              twnty.ai
+            <Link href="/admin/dashboard" className="hover:opacity-70 transition-opacity">
+              <Image
+                src="/new-logo.png"
+                alt="twnty.ai"
+                width={100}
+                height={32}
+                className="h-8 w-auto"
+                priority
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}

@@ -57,15 +57,15 @@ export default function LikeButton({ articleId, initialLikes }: { articleId: str
     <button
       onClick={handleLike}
       disabled={liked || loading}
-      className={`flex items-center justify-center gap-2 px-4 py-2 h-[42px] border-2 border-black font-medium transition-all whitespace-nowrap ${
+      className={`flex items-center justify-center gap-2 px-5 py-2.5 h-[42px] font-medium transition-all whitespace-nowrap rounded-lg ${
         liked 
-          ? 'bg-black text-white' 
-          : 'bg-white text-black hover:bg-black hover:text-white'
-      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          ? 'bg-black text-white shadow-sm' 
+          : 'bg-gray-50 text-gray-800 hover:bg-gray-200 active:bg-gray-300'
+      } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <Heart size={18} fill={liked ? 'currentColor' : 'none'} className="flex-shrink-0" />
       <span>{liked ? 'Liked' : 'Like this article'}</span>
-      <span>({likes})</span>
+      <span className={liked ? 'text-gray-300' : 'text-gray-600'}>({likes})</span>
     </button>
   );
 }

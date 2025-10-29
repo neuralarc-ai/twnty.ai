@@ -208,7 +208,7 @@ export default async function HomePage() {
                           {/* Hashtags */}
                           {article.hashtags && article.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {article.hashtags.slice(0, 2).map((tag: string, idx: number) => (
+                              {article.hashtags.map((tag: string, idx: number) => (
                                 <span key={idx} className="px-2 py-1 bg-black text-white text-xs font-medium">
                                   {tag}
                                 </span>
