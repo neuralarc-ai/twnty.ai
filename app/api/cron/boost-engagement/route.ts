@@ -60,21 +60,21 @@ export async function GET(request: NextRequest) {
     // Otherwise, verify CRON_SECRET for external services
     if (!vercelCronHeader) {
       // External cron service - require CRON_SECRET
-      if (!cronSecret) {
+    if (!cronSecret) {
         console.error('CRON_SECRET not configured for external cron');
         return NextResponse.json({ 
           error: 'CRON_SECRET not configured',
           message: 'CRON_SECRET environment variable is missing'
         }, { status: 500 });
-      }
-      
-      if (authHeader !== `Bearer ${cronSecret}`) {
+    }
+    
+    if (authHeader !== `Bearer ${cronSecret}`) {
         console.error('Unauthorized external cron request', { 
           hasHeader: !!authHeader,
           headerLength: authHeader?.length || 0,
           secretLength: cronSecret?.length || 0
         });
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     } else {
       console.log('Vercel cron job detected');
@@ -101,14 +101,39 @@ export async function GET(request: NextRequest) {
     console.log('Supabase client created, fetching articles...');
 
     // Get all published articles
-    const { data: articles, error } = await supabase
+    // Try to select views column, but handle if it doesn't exist
+    let articles: any[] = [];
+    let hasViewsColumn = true;
+    
+    const { data: articlesWithViews, error: viewsError } = await supabase
       .from(TABLES.ARTICLES)
       .select('id, title, views, likes')
       .eq('status', 'published');
 
-    if (error) {
-      console.error('Supabase query error:', error);
-      throw error;
+    if (viewsError) {
+      // Check if error is due to missing views column
+      if (viewsError.code === '42703' || viewsError.message?.includes('does not exist')) {
+        console.warn('Views column does not exist, fetching articles without views');
+        hasViewsColumn = false;
+        
+        // Try again without views column
+        const { data: articlesWithoutViews, error: noViewsError } = await supabase
+          .from(TABLES.ARTICLES)
+          .select('id, title, likes')
+          .eq('status', 'published');
+        
+        if (noViewsError) {
+          console.error('Supabase query error:', noViewsError);
+          throw noViewsError;
+        }
+        
+        articles = (articlesWithoutViews || []).map((a: any) => ({ ...a, views: 0 }));
+      } else {
+        console.error('Supabase query error:', viewsError);
+        throw viewsError;
+      }
+    } else {
+      articles = articlesWithViews || [];
     }
 
     if (!articles || articles.length === 0) {
@@ -138,18 +163,32 @@ export async function GET(request: NextRequest) {
       const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
 
       // Update likes and views
+      // Only update if there's something to update
       if (likesBoost > 0 || viewsBoost > 0) {
-        const { error: updateError } = await supabase
-          .from(TABLES.ARTICLES)
-          .update({
-            likes: (article.likes || 0) + likesBoost,
-            views: (article.views || 0) + viewsBoost,
-          })
-          .eq('id', article.id);
+        const updateData: any = {};
         
-        if (updateError) {
-          console.error(`Error updating article ${article.id}:`, updateError);
+        if (likesBoost > 0) {
+          updateData.likes = (article.likes || 0) + likesBoost;
+        }
+        
+        // Only update views if the column exists (graceful fallback)
+        if (viewsBoost > 0 && hasViewsColumn) {
+          updateData.views = (article.views || 0) + viewsBoost;
+        } else if (viewsBoost > 0 && !hasViewsColumn) {
+          // Column doesn't exist - skip views update but continue
+          console.warn(`Views column not available, skipping views update for article ${article.id}`);
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          const { error: updateError } = await supabase
+            .from(TABLES.ARTICLES)
+            .update(updateData)
+            .eq('id', article.id);
+          
+          if (updateError) {
+            console.error(`Error updating article ${article.id}:`, updateError);
             throw new Error(`Failed to update article ${article.id}: ${updateError.message || JSON.stringify(updateError)}`);
+          }
         }
       }
 
