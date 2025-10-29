@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Articles', href: '/admin/articles', icon: FileText },
     { name: 'New Article', href: '/admin/articles/new', icon: PlusCircle },
+    { name: 'Comments', href: '/admin/comments', icon: MessageSquare },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

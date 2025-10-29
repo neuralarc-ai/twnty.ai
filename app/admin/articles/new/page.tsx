@@ -330,6 +330,18 @@ export default function NewArticlePage() {
                 <img src={formData.featured_image} alt="Preview" className="max-w-xs rounded-lg" />
               </div>
             )}
+            {/* Aspect Ratio Guidelines */}
+            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-xs font-medium text-gray-700 mb-2">Recommended Aspect Ratios:</p>
+              <ul className="text-xs text-gray-600 space-y-1">
+                <li>• <strong>Home Page (Featured):</strong> 5:2 or 2.5:1 (wide landscape)</li>
+                <li>• <strong>Home Page (Cards):</strong> 2:1 (wide landscape)</li>
+                <li>• <strong>Article Page:</strong> 16:10 or 8:5 (desktop), 16:9 (tablet/mobile)</li>
+              </ul>
+              <p className="text-xs text-gray-500 mt-2">
+                Images will be automatically cropped to fit. Best results with landscape-oriented images.
+              </p>
+            </div>
           </div>
 
           {/* Media URLs */}
