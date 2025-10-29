@@ -124,7 +124,6 @@ export default async function ArticlePage({ params }: { params: { id: string } }
                 wordSpacing: '0.02em',
                 padding: '2rem 3rem',
                 background: 'transparent',
-                textAlign: 'justify',
               }}
             />
           </div>
