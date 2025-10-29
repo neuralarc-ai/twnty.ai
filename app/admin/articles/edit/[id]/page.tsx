@@ -77,7 +77,9 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
     setSaving(true);
 
     try {
-      let imageUrl = formData.featured_image;
+      let imageUrl: string | null = formData.featured_image;
+      
+      // If there's a new uploaded image, upload it first
       if (uploadedImage) {
         const imageFormData = new FormData();
         imageFormData.append('file', uploadedImage);
@@ -90,6 +92,26 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
           imageUrl = uploadData.url;
+        } else {
+          alert('Failed to upload image. Please try again.');
+          setSaving(false);
+          return;
+        }
+      } else if (formData.featured_image) {
+        // Check if existing image URL is valid (not a blob URL)
+        if (formData.featured_image.startsWith('blob:')) {
+          // Don't save blob URLs - they're temporary and won't work
+          console.warn('Rejecting blob URL - keeping existing image or setting to null');
+          // Fetch current article to preserve existing valid image_url
+          try {
+            const currentResponse = await fetch(`/api/admin/articles/${params.id}`);
+            if (currentResponse.ok) {
+              const currentData = await currentResponse.json();
+              imageUrl = currentData.image_url || null;
+            }
+          } catch (err) {
+            imageUrl = null;
+          }
         }
       }
 

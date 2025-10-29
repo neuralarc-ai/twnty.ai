@@ -29,11 +29,17 @@ export default function SafeImage({
   const [imageError, setImageError] = useState(false);
   const imageSrc = logsrc || src || '';
 
-  const placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239ca3af' font-family='sans-serif' font-size='18'%3EImage not available%3C/text%3E%3C/svg%3E`;
+  // Validate that imageSrc is a valid, non-empty URL
+  const isValidUrl = imageSrc && 
+    imageSrc.trim() !== '' && 
+    (imageSrc.startsWith('http://') || 
+     imageSrc.startsWith('https://') || 
+     imageSrc.startsWith('/') ||
+     imageSrc.startsWith('data:'));
 
-  if (imageError) {
+  if (!isValidUrl || imageError) {
     return (
-      <div className={`bg-gray-100 flex items-center justify-center ${className}`}>
+      <div className={`bg-gray-100 flex items-center justify-center ${fill ? 'absolute inset-0' : ''} ${className}`}>
         <span className="text-gray-400 text-sm">Image not available</span>
       </div>
     );
@@ -53,6 +59,11 @@ export default function SafeImage({
         src={imageSrc}
         fill
         sizes={sizes || '100vw'}
+        unoptimized={imageSrc.startsWith('http') && !imageSrc.includes('supabase.co')}
+        onError={() => {
+          console.error('Failed to load image:', imageSrc);
+          setImageError(true);
+        }}
       />
     );
   }
@@ -65,6 +76,11 @@ export default function SafeImage({
         width={width}
         height={height}
         sizes={sizes}
+        unoptimized={imageSrc.startsWith('http') && !imageSrc.includes('supabase.co')}
+        onError={() => {
+          console.error('Failed to load image:', imageSrc);
+          setImageError(true);
+        }}
       />
     );
   }

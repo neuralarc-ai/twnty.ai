@@ -2,34 +2,34 @@
 
 ## ⏰ Schedule
 
-**Recommended:** Use **external cron service** for hourly execution
-- **External Cron:** `0 * * * *` (every hour) - Recommended ✅
-- **Vercel Cron:** Daily only (not recommended for natural distribution)
-
-**Current Setup:** Code is optimized for hourly execution to spread engagement throughout the day
+**Current:** Using **Vercel Cron Jobs** (daily execution)
+- **Schedule:** `0 0 * * *` (daily at 12:00 AM UTC)
+- **Frequency:** 1 execution per day
+- **Note:** Vercel Free Tier only supports daily cron (hourly requires Pro plan)
+- **Distribution:** Since it's daily, engagement is added once per day (not spread hourly)
 
 ## 📈 Per Article Per Day
 
 For each published article, the cron job adds:
 
 ### 1. **Likes**
-- **Amount:** 1 like per article per hour
-- **Probability:** 80% chance per hour
-- **Expected per day:** ~19 likes per article (20-30 range over 24 hours)
-- **Distribution:** Spread naturally throughout the day ⏰
+- **Amount:** 20-30 likes per article per day
+- **Added:** Once daily when cron runs (random 20-30)
+- **Expected per day:** ~25 likes per article (average)
+- **Distribution:** Added all at once daily (midnight UTC) ⏰
 
 ### 2. **Comments**
-- **Amount:** 1 comment per article per hour
-- **Probability:** 50% chance per hour
-- **Expected per day:** ~12 comments per article (10-15 range over 24 hours)
-- **Distribution:** Spread naturally throughout the day ⏰
+- **Amount:** 10-15 comments per article per day
+- **Added:** Once daily when cron runs (random 10-15)
+- **Expected per day:** ~12.5 comments per article (average)
+- **Distribution:** Added all at once daily (midnight UTC) ⏰
 - **Comments are realistic:** Uses 15 different templates with random names and emails
 
 ### 3. **Views**
 - **Amount:** 3-4 views per like (proportional to likes)
 - **Ratio:** 2.5x to 4x of likes (rounded to 3-4 views per like)
-- **Expected per day:** ~60-80 views per article (proportional to ~19 likes/day)
-- **Distribution:** Scales naturally with likes - more likes = more views 📈
+- **Expected per day:** ~75-120 views per article (proportional to 20-30 likes)
+- **Distribution:** Scales with likes - added daily when cron runs 📈
 
 ## 📊 Example: Daily Totals
 

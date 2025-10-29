@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Edit, Trash2, Eye, Heart, MessageCircle } from 'lucide-react';
 import DeleteArticleButton from '@/components/DeleteArticleButton';
+import { headers } from 'next/headers';
 
 async function getArticles() {
   try {
@@ -35,6 +36,19 @@ export const revalidate = 0;
 export default async function ArticlesPage() {
   await checkAuth();
   const articles = await getArticles();
+  
+  // Get the public domain URL for article links (to avoid admin subdomain rewriting)
+  const headersList = await headers();
+  const host = headersList.get('host') || '';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  
+  // If on admin subdomain, convert to public domain
+  let publicDomain = host;
+  if (host.startsWith('admin.') || host.startsWith('admin.localhost')) {
+    publicDomain = host.replace(/^admin\./, '').replace(/^admin\.localhost/, 'localhost');
+  }
+  
+  const baseUrl = `${protocol}://${publicDomain}`;
 
   return (
     <AdminLayout>
@@ -120,14 +134,15 @@ export default async function ArticlesPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           {article.status === 'published' && (
-                            <Link
-                              href={`/article/${article.id}`}
+                            <a
+                              href={`${baseUrl}/article/${article.id}`}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded"
                               title="View"
                             >
                               <Eye size={18} />
-                            </Link>
+                            </a>
                           )}
                           <Link
                             href={`/admin/articles/edit/${article.id}`}

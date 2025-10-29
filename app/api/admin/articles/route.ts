@@ -19,11 +19,18 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
+    // Validate image_url - reject blob URLs
+    let imageUrl = body.image_url || body.featured_image;
+    if (imageUrl && imageUrl.startsWith('blob:')) {
+      console.warn('Rejected blob URL, setting image_url to null');
+      imageUrl = null; // Reject blob URLs - they're temporary and won't work
+    }
+    
     const articleData: any = {
       title: body.title,
       content: body.content,
       excerpt: body.excerpt || body.teaser || body.content.substring(0, 200) + '...',
-      image_url: body.image_url || body.featured_image,
+      image_url: imageUrl || null,
       audio_url: body.audio_url,
       video_url: body.video_url,
       external_links: body.external_links || [],

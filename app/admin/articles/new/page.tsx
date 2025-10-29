@@ -147,7 +147,9 @@ export default function NewArticlePage() {
     setLoading(true);
 
     try {
-      let imageUrl = formData.featured_image;
+      let imageUrl: string | null = null;
+      
+      // If there's a new uploaded image, upload it first
       if (uploadedImage) {
         const imageFormData = new FormData();
         imageFormData.append('file', uploadedImage);
@@ -160,6 +162,20 @@ export default function NewArticlePage() {
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
           imageUrl = uploadData.url;
+        } else {
+          alert('Failed to upload image. Please try again.');
+          setLoading(false);
+          return;
+        }
+      } else if (formData.featured_image) {
+        // If there's an existing image URL, check if it's valid (not a blob URL)
+        if (formData.featured_image.startsWith('blob:')) {
+          // Don't save blob URLs - they're temporary and won't work
+          console.warn('Rejecting blob URL - image must be uploaded first');
+          imageUrl = null;
+        } else {
+          // Existing valid URL (from Supabase Storage or external)
+          imageUrl = formData.featured_image;
         }
       }
 

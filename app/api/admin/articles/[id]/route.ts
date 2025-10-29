@@ -54,11 +54,24 @@ export async function PUT(
 
     const body = await request.json();
     
+    // Validate image_url - reject blob URLs
+    let imageUrl = body.image_url || body.featured_image;
+    if (imageUrl && imageUrl.startsWith('blob:')) {
+      console.warn('Rejected blob URL for article update, keeping existing image_url');
+      // Don't update if it's a blob URL - keep the existing value
+      const { data: currentArticle } = await supabase
+        .from(TABLES.ARTICLES)
+        .select('image_url')
+        .eq('id', params.id)
+        .single();
+      imageUrl = currentArticle?.image_url || null;
+    }
+    
     const updateData: any = {
       title: body.title,
       content: body.content,
       excerpt: body.excerpt || body.teaser,
-      image_url: body.image_url || body.featured_image,
+      image_url: imageUrl,
       audio_url: body.audio_url,
       video_url: body.video_url,
       external_links: body.external_links,

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { TABLES } from '@/lib/supabase';
 
-// This endpoint should be called by a cron job every hour for best results
-// Over 24 hours, this will add ~20-30 likes and ~10-15 comments per article
-// Use external cron service (cron-job.org) for hourly execution
-// Vercel cron (daily) can run simultaneously but hourly external cron is recommended
+// This endpoint should be called by Vercel Cron Jobs daily
+// Per day, this will add ~20-30 likes and ~10-15 comments per article
+// Views are added proportionally to likes (2.5-4x ratio)
+// Configured in vercel.json to run daily at midnight UTC
 
 // Realistic comment templates
 const commentTemplates = [
@@ -222,28 +222,19 @@ export async function GET(request: NextRequest) {
     // Update each article with gradual boosts
     const updates = articles.map(async (article) => {
       try {
-      // Calculate hourly amounts to spread throughout the day
-      // Target: 20-30 likes/day, 10-15 comments/day (spread over ~24 hourly runs)
-      // Per hour: ~1 like/hour, ~0.5 comments/hour on average
+      // Add daily engagement amounts (Vercel cron runs once per day)
+      // Target: 20-30 likes/day, 10-15 comments/day per article
       
-      // Add 1 like per article per hour (80% chance, so ~20 likes/day)
-      // This spreads likes naturally throughout 24 hours
-      const shouldAddLike = Math.random() > 0.2; // 80% chance
-      const likesBoost = shouldAddLike ? 1 : 0;
+      // Add 20-30 likes per article per day
+      const likesBoost = Math.floor(Math.random() * 11) + 20; // 20-30 likes
 
-      // Add 1 comment per article per hour (40-50% chance, so ~10-15 comments/day)
-      // This spreads comments naturally throughout 24 hours
-      const shouldAddComment = Math.random() > 0.5; // 50% chance
-      const commentsToAdd = shouldAddComment ? 1 : 0;
+      // Add 10-15 comments per article per day
+      const commentsToAdd = Math.floor(Math.random() * 6) + 10; // 10-15 comments
       
       // Add views proportional to likes (2.5x to 4x ratio)
-      // When a like is added, add 3-4 views (2.5-4x, rounded to 3-4)
-      // This ensures views scale naturally with engagement
-      let viewsBoost = 0;
-      if (likesBoost > 0) {
-        // Add 3-4 views per like (2.5-4x range, rounded to 3-4)
-        viewsBoost = Math.floor(Math.random() * 2) + 3; // 3-4 views per like
-      }
+      // Calculate views based on likes: 20-30 likes × 3-4 views = 60-120 views
+      const viewsPerLike = Math.floor(Math.random() * 2) + 3; // 3-4 views per like
+      const viewsBoost = likesBoost * viewsPerLike; // Total views = likes × views_per_like
 
       // Update likes and views (only if columns exist)
       // Only update if there's something to update and column exists
@@ -275,8 +266,8 @@ export async function GET(request: NextRequest) {
         console.warn(`Skipping engagement update for article ${article.id} - views and likes columns not available`);
       }
 
-      // Add single comment if selected (spread throughout the day)
-      if (commentsToAdd > 0) {
+      // Add multiple comments (10-15 per article per day)
+      for (let i = 0; i < commentsToAdd; i++) {
         const randomName = names[Math.floor(Math.random() * names.length)];
         const randomEmail = generateRandomEmail(randomName);
         const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
@@ -291,8 +282,8 @@ export async function GET(request: NextRequest) {
           });
         
         if (commentError) {
-          console.error(`Error inserting comment for article ${article.id}:`, commentError);
-          // Don't throw - continue with other operations
+          console.error(`Error inserting comment ${i+1}/${commentsToAdd} for article ${article.id}:`, commentError);
+          // Continue with other comments even if one fails
         } else {
           commentsAdded++;
         }

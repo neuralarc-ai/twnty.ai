@@ -37,11 +37,36 @@ async function getPublishedArticles() {
     }
 
     // Map database column names to frontend-friendly names
-    return (data || []).map(article => ({
-      ...article,
-      featured_image: article.image_url,
-      teaser: article.excerpt,
-    }));
+    const mappedArticles = (data || []).map(article => {
+      // Filter out blob URLs - they're temporary and won't work for images
+      let imageUrl = article.image_url;
+      if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('blob:')) {
+        console.warn(`⚠️ Article ${article.id} has invalid blob URL: ${imageUrl}`);
+        imageUrl = null; // Set to null so placeholder shows instead
+      }
+      
+      return {
+        ...article,
+        featured_image: imageUrl,
+        teaser: article.excerpt,
+      };
+    });
+
+    // Debug: Log second article image data
+    if (mappedArticles.length > 1) {
+      const secondArticle = mappedArticles[1];
+      console.log('🔍 Second Article Debug:', {
+        id: secondArticle.id,
+        title: secondArticle.title,
+        image_url: secondArticle.image_url,
+        featured_image: secondArticle.featured_image,
+        hasImage: !!secondArticle.featured_image,
+        imageLength: secondArticle.featured_image?.length || 0,
+        isBlobUrl: secondArticle.image_url?.startsWith('blob:') || false,
+      });
+    }
+
+    return mappedArticles;
   } catch (error) {
     console.error('Error fetching articles:', error);
     return [];
@@ -144,19 +169,26 @@ export default async function HomePage() {
                 {secondArticle && (
                   <Link 
                     href={`/article/${secondArticle.id}`}
-                    className="group border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 bg-white overflow-hidden flex flex-col"
+                    className="group border-2 border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 bg-white overflow-hidden flex flex-col h-full"
                   >
-                    {secondArticle.featured_image && (
-                      <div className="relative w-full h-48 overflow-hidden">
+                    {/* Image Section - 50% height */}
+                    {secondArticle.featured_image && secondArticle.featured_image.trim() !== '' ? (
+                      <div className="relative w-full flex-1 min-h-0 overflow-hidden">
                         <SafeImage
-                          logsrc={secondArticle.featured_image}
-                          alt={secondArticle.title}
+                          logsrc={secondArticle.featured_image.trim()}
+                          alt={secondArticle.title || 'Article image'}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
+                    ) : (
+                      <div className="relative w-full flex-1 min-h-0 bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">Image not available</span>
+                      </div>
                     )}
-                    <div className="p-6 flex-1 flex flex-col">
+                    
+                    {/* Text Section - 50% height */}
+                    <div className="flex-1 min-h-0 p-6 flex flex-col">
                       {secondArticle.hashtags && secondArticle.hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
                           {secondArticle.hashtags.slice(0, 2).map((tag: string, idx: number) => (
@@ -166,15 +198,23 @@ export default async function HomePage() {
                           ))}
                         </div>
                       )}
-                      <h3 className="text-xl font-serif font-bold mb-3 group-hover:underline line-clamp-2">
-                        {secondArticle.title}
+                      <h3 className="text-xl font-serif font-bold mb-3 group-hover:underline line-clamp-2 flex-shrink-0">
+                        {secondArticle.title || 'Untitled Article'}
                       </h3>
-                      {secondArticle.teaser && (
-                        <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed">
+                      {secondArticle.teaser ? (
+                        <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed flex-1">
                           {stripHtmlTags(secondArticle.teaser)}
                         </p>
+                      ) : secondArticle.excerpt ? (
+                        <p className="text-gray-700 text-sm mb-4 line-clamp-3 leading-relaxed flex-1">
+                          {stripHtmlTags(secondArticle.excerpt)}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500 text-sm mb-4 italic flex-1">
+                          No description available
+                        </p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto">
+                      <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto flex-shrink-0">
                         <span className="flex items-center gap-1">
                           <Eye className="w-3 h-3" />
                           {secondArticle.views || 0}
@@ -182,6 +222,10 @@ export default async function HomePage() {
                         <span className="flex items-center gap-1">
                           <Heart className="w-3 h-3" />
                           {secondArticle.likes || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {secondArticle.published_at && formatDistanceToNow(new Date(secondArticle.published_at), { addSuffix: true })}
                         </span>
                       </div>
                     </div>
