@@ -28,16 +28,27 @@ jobs:
           
           DOMAIN="${{ secrets.VERCEL_DOMAIN }}"
           SECRET="${{ secrets.CRON_SECRET }}"
+          BYPASS_TOKEN="${{ secrets.VERCEL_BYPASS_TOKEN }}"
           
           echo "📡 Calling API endpoint..."
           echo "Domain: $DOMAIN"
-          echo "URL: https://$DOMAIN/api/cron/boost-engagement"
+          
+          # Build URL with bypass token if available
+          if [ -n "$BYPASS_TOKEN" ]; then
+            URL="https://$DOMAIN/api/cron/boost-engagement?x-vercel-protection-bypass=$BYPASS_TOKEN"
+            echo "Using bypass token for deployment protection"
+          else
+            URL="https://$DOMAIN/api/cron/boost-engagement"
+            echo "Note: Bypass token not set - may fail if deployment protection is enabled"
+          fi
+          
+          echo "URL: $URL"
           
           # Make the API call and capture both response and status code
           HTTP_CODE=$(curl -s -o response_body.txt -w "%{http_code}" \
             -X GET \
             -H "Authorization: Bearer $SECRET" \
-            "https://$DOMAIN/api/cron/boost-engagement")
+            "$URL")
           
           echo ""
           echo "--- Response ---"
@@ -63,4 +74,5 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
+          VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_BYPASS_TOKEN }}
 
