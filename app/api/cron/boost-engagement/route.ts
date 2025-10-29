@@ -236,10 +236,14 @@ export async function GET(request: NextRequest) {
       const shouldAddComment = Math.random() > 0.5; // 50% chance
       const commentsToAdd = shouldAddComment ? 1 : 0;
       
-      // Add some views per hour (distributed throughout day)
-      // ~15 views/day ÷ 24 hours = ~0.6 views/hour, so ~1 view/hour with random chance
-      const shouldAddView = Math.random() > 0.4; // 60% chance
-      const viewsBoost = shouldAddView ? 1 : 0;
+      // Add views proportional to likes (2.5x to 4x ratio)
+      // When a like is added, add 3-4 views (2.5-4x, rounded to 3-4)
+      // This ensures views scale naturally with engagement
+      let viewsBoost = 0;
+      if (likesBoost > 0) {
+        // Add 3-4 views per like (2.5-4x range, rounded to 3-4)
+        viewsBoost = Math.floor(Math.random() * 2) + 3; // 3-4 views per like
+      }
 
       // Update likes and views (only if columns exist)
       // Only update if there's something to update and column exists
