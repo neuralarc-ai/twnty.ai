@@ -28,8 +28,10 @@ Make sure these are set in Vercel Dashboard → Settings → Environment Variabl
 
 After deployment:
 1. Go to **Vercel Dashboard** → Your Project → **Settings** → **Crons**
-2. You should see: `boost-engagement` scheduled for `0 * * * *` (every hour)
+2. You should see: `boost-engagement` scheduled for `0 0 * * *` (once per day at midnight)
 3. Status should be **Active**
+
+**Note:** Free tier is limited to **daily executions only**. The cron runs once per day at midnight UTC.
 
 ### 4. Test the Cron Job
 
@@ -48,13 +50,17 @@ You can manually trigger a test:
 
 ## Limitations (Free Tier)
 
-If you're on Vercel Free tier, you may encounter:
+If you're on Vercel Free (Hobby) tier:
 
 - ⏱️ **Limited execution time** - Cron jobs may timeout on very large operations
 - 📊 **Limited logging** - Some logs might not be visible
-- 🔄 **Execution frequency** - May have rate limits
+- 🔄 **Execution frequency** - **Must be daily only** (once per day maximum)
+  - ✅ `0 0 * * *` - Once per day at midnight (works)
+  - ❌ `0 * * * *` - Every hour (will cause deployment failure)
 
-**These limitations are usually fine** for the engagement boost feature!
+**Current schedule:** `0 0 * * *` (once per day at midnight UTC)
+
+This means engagement boosts will happen once per day instead of hourly, which is still effective!
 
 ## Troubleshooting
 
@@ -80,5 +86,7 @@ If you're on Vercel Free tier, you may encounter:
 3. **Check Vercel Dashboard** → Settings → Crons
 4. **Monitor** the first few runs in the logs
 
-The cron job will run automatically every hour starting after the first successful deployment! 🎉
+The cron job will run automatically **once per day at midnight UTC** starting after the first successful deployment! 🎉
+
+**Free Tier Note:** For hourly execution, consider upgrading to Pro plan or use external cron service.
 
