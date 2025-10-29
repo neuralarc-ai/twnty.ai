@@ -45,9 +45,8 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.005em;
   word-spacing: 0.02em;
   padding: 2rem 3rem;
-  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: transparent;
+  text-align: justify;
 }
 
 @media (max-width: 768px) {

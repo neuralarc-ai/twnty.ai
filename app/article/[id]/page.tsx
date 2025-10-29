@@ -72,7 +72,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
             )}
 
             {/* Title */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 leading-tight">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold mb-6 leading-tight">
               {article.title}
             </h1>
 
@@ -123,9 +123,8 @@ export default async function ArticlePage({ params }: { params: { id: string } }
                 letterSpacing: '0.005em',
                 wordSpacing: '0.02em',
                 padding: '2rem 3rem',
-                background: 'linear-gradient(to bottom, #fafafa 0%, #ffffff 100%)',
-                borderRadius: '8px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                background: 'transparent',
+                textAlign: 'justify',
               }}
             />
           </div>
