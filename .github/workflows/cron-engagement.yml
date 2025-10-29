@@ -10,22 +10,49 @@ jobs:
   boost-engagement:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "Error: CRON_SECRET is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_DOMAIN }}" ]; then
+            echo "Error: VERCEL_DOMAIN is not set"
+            exit 1
+          fi
+          echo "✓ Secrets verified"
+
       - name: Call Engagement Boost API
         run: |
+          echo "Calling: https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement"
+          
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X GET \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement)
+            https://${{ secrets.VERCEL_DOMAIN }}/api/cron/boost-engagement 2>&1)
           
           HTTP_CODE=$(echo "$RESPONSE" | grep -o "HTTP_CODE:[0-9]*" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed 's/HTTP_CODE:.*//')
           
+          echo "---"
           echo "Response Code: $HTTP_CODE"
-          echo "Response Body: $BODY"
+          echo "Response Body:"
+          echo "$BODY"
+          echo "---"
           
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Error: API returned HTTP $HTTP_CODE"
+          if [ -z "$HTTP_CODE" ]; then
+            echo "Error: Failed to get HTTP code. Full response:"
+            echo "$RESPONSE"
             exit 1
           fi
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Error: API returned HTTP $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          echo "✅ Success! API call completed successfully."
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_DOMAIN: ${{ secrets.VERCEL_DOMAIN }}
 
