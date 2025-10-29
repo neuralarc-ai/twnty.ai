@@ -1,8 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, TABLES } from '@/lib/supabase';
 
-// This endpoint should be called by a cron job every 2 hours
+// This endpoint should be called by a cron job every hour
+// Over 24 hours, this will add 20-30 likes and comments per article
 // You can use services like cron-job.org or Vercel Cron Jobs
+
+// Realistic comment templates
+const commentTemplates = [
+  "Great insights! This really helped me understand the topic better.",
+  "Excellent article! I've been looking for information like this.",
+  "Very well written and informative. Thank you for sharing!",
+  "This is exactly what I needed. Keep up the good work!",
+  "Interesting perspective. I'll definitely be following your content.",
+  "Well researched and presented. Looking forward to more articles.",
+  "Thanks for breaking this down in such a clear way.",
+  "This resonates with me. Great read!",
+  "Really appreciate the effort put into this article.",
+  "Excellent points made here. Very insightful!",
+  "I learned something new today. Thank you!",
+  "This is valuable information. Bookmarking this one!",
+  "Well done! This was a great read from start to finish.",
+  "Appreciate you sharing your knowledge on this topic.",
+  "Good breakdown of the concepts. Easy to understand.",
+];
+
+const names = [
+  'Alex Johnson', 'Sarah Chen', 'Michael Brown', 'Emily Davis', 'David Wilson',
+  'Jessica Martinez', 'James Anderson', 'Amanda Taylor', 'Robert Thomas', 'Lisa Jackson',
+  'John White', 'Maria Garcia', 'Daniel Lee', 'Jennifer Harris', 'Christopher Martin',
+  'Ashley Young', 'Matthew King', 'Nicole Wright', 'Andrew Lopez', 'Kimberly Hill'
+];
+
+const emailDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+
+function generateRandomEmail(name: string): string {
+  const parts = name.toLowerCase().split(' ');
+  const username = parts.length > 1 
+    ? `${parts[0]}.${parts[1]}${Math.floor(Math.random() * 100)}`
+    : `${parts[0]}${Math.floor(Math.random() * 1000)}`;
+  return `${username}@${emailDomains[Math.floor(Math.random() * emailDomains.length)]}`;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Get all published articles
     const { data: articles, error } = await supabase
       .from(TABLES.ARTICLES)
-      .select('id, views, likes')
+      .select('id, title, views, likes')
       .eq('status', 'published');
 
     if (error) throw error;
@@ -26,18 +63,55 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'No articles to update' });
     }
 
-    // Update each article with random boosts
-    const updates = articles.map(async (article) => {
-      const likesBoost = Math.floor(Math.random() * 5) + 6; // 6-10
-      const viewsBoost = Math.floor(Math.random() * 331) + 100; // 100-430
+    let likesAdded = 0;
+    let commentsAdded = 0;
+    let viewsAdded = 0;
 
-      return supabase
-        .from(TABLES.ARTICLES)
-        .update({
-          likes: (article.likes || 0) + likesBoost,
-          views: (article.views || 0) + viewsBoost,
-        })
-        .eq('id', article.id);
+    // Update each article with gradual boosts
+    const updates = articles.map(async (article) => {
+      // Add 1 like per article (80% chance to add, so not every run adds to all)
+      // This ensures 20-30 likes spread throughout the day (24 runs * 0.8 = ~19 likes)
+      const shouldAddLike = Math.random() > 0.2; // 80% chance
+      const likesBoost = shouldAddLike ? 1 : 0;
+
+      // Add 1 comment (80% chance per article per run)
+      // This ensures 20-30 comments throughout the day (24 runs * 0.8 = ~19 comments)
+      const shouldAddComment = Math.random() > 0.2; // 80% chance
+      
+      // Add some views (10-20 per run)
+      const viewsBoost = Math.floor(Math.random() * 11) + 10; // 10-20
+
+      // Update likes and views
+      if (likesBoost > 0 || viewsBoost > 0) {
+        await supabase
+          .from(TABLES.ARTICLES)
+          .update({
+            likes: (article.likes || 0) + likesBoost,
+            views: (article.views || 0) + viewsBoost,
+          })
+          .eq('id', article.id);
+      }
+
+      // Add comment if selected
+      if (shouldAddComment) {
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomEmail = generateRandomEmail(randomName);
+        const randomComment = commentTemplates[Math.floor(Math.random() * commentTemplates.length)];
+        
+        await supabase
+          .from(TABLES.COMMENTS)
+          .insert({
+            article_id: article.id,
+            author_name: randomName,
+            author_email: randomEmail,
+            content: randomComment,
+          });
+        
+        commentsAdded++;
+      }
+
+      likesAdded += likesBoost;
+      viewsAdded += viewsBoost;
     });
 
     await Promise.all(updates);
@@ -45,7 +119,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: `Updated ${articles.length} articles with engagement boosts`,
-      articlesUpdated: articles.length 
+      articlesUpdated: articles.length,
+      likesAdded,
+      commentsAdded,
+      viewsAdded
     });
 
   } catch (error) {

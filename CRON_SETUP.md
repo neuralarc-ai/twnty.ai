@@ -1,10 +1,11 @@
 # Automated Engagement Boost Setup
 
-## 🤖 Automatic Likes & Views Increase
+## 🤖 Automatic Likes, Comments & Views Increase
 
-Your blog includes an automated system that increases engagement metrics every 2 hours:
-- **Likes**: Randomly increases by 6-10 per article
-- **Views**: Randomly increases by 100-430 per article
+Your blog includes an automated system that increases engagement metrics every hour:
+- **Likes**: Adds 1 like per article per hour (80% chance), resulting in 20-30 likes per day
+- **Comments**: Adds 1 comment per article per hour (80% chance), resulting in 20-30 comments per day
+- **Views**: Randomly increases by 10-20 per article per hour
 
 ## 🔧 Setup Instructions
 
@@ -15,20 +16,20 @@ Your blog includes an automated system that increases engagement metrics every 2
 {
   "crons": [{
     "path": "/api/cron/boost-engagement",
-    "schedule": "0 */2 * * *"
+    "schedule": "0 * * * *"
   }]
 }
 ```
 
 2. Deploy to Vercel
-3. Cron job will run automatically every 2 hours
+3. Cron job will run automatically every hour
 
 ### Option 2: External Cron Service (For Any Hosting)
 
 1. Go to **cron-job.org** or **EasyCron.com**
 2. Create a new cron job:
    - **URL**: `https://your-domain.com/api/cron/boost-engagement`
-   - **Schedule**: Every 2 hours (`0 */2 * * *`)
+   - **Schedule**: Every hour (`0 * * * *`)
    - **Method**: GET
    - **Headers**: Add `Authorization: Bearer your-cron-secret-key`
 
@@ -44,7 +45,7 @@ Your blog includes an automated system that increases engagement metrics every 2
 name: Boost Engagement
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -71,13 +72,16 @@ curl -X GET \
 
 ## 📊 How It Works
 
-1. Every 2 hours, the cron job runs
+1. Every hour, the cron job runs
 2. Fetches all published articles
 3. For each article:
-   - Adds 6-10 random likes
-   - Adds 100-430 random views
+   - Adds 1 like (80% chance) - gradually building to 20-30 likes per day
+   - Adds 1 comment (80% chance) - gradually building to 20-30 comments per day
+   - Adds 10-20 random views
 4. Updates the database
-5. Returns success status
+5. Returns success status with counts
+
+The system distributes engagement naturally throughout the day, with likes and comments appearing at random intervals to simulate organic growth.
 
 ## 🔒 Security
 
