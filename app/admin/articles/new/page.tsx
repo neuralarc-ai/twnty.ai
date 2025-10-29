@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import ArticlePreviewModal from '@/components/ArticlePreviewModal';
 import RichTextEditor from '@/components/RichTextEditor';
-import { Wand2, Upload, X, Calendar, Link as LinkIcon, Music, Video, Eye } from 'lucide-react';
+import { Wand2, Upload, X, Calendar, Link as LinkIcon, Music, Video, Eye, RefreshCw } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 export default function NewArticlePage() {
@@ -15,6 +15,8 @@ export default function NewArticlePage() {
   const [showAIModal, setShowAIModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [lastPrompt, setLastPrompt] = useState('');
+  const [articleGenerated, setArticleGenerated] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -49,7 +51,9 @@ export default function NewArticlePage() {
   });
 
   const handleGenerateWithAI = async () => {
-    if (!aiPrompt.trim()) {
+    const promptToUse = aiPrompt;
+    
+    if (!promptToUse.trim()) {
       alert('Please enter a topic or prompt');
       return;
     }
@@ -60,7 +64,7 @@ export default function NewArticlePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          topic: aiPrompt 
+          topic: promptToUse 
         }),
       });
 
@@ -81,6 +85,9 @@ export default function NewArticlePage() {
         console.log('Setting form data with excerpt:', data.excerpt);
         console.log('Setting form data with hashtags:', data.hashtags);
         
+        // Save the prompt and mark as generated
+        setLastPrompt(promptToUse);
+        setArticleGenerated(true);
         setShowAIModal(false);
         setAiPrompt('');
       } else {
@@ -90,6 +97,46 @@ export default function NewArticlePage() {
     } catch (error) {
       console.error('Error generating article:', error);
       alert('Failed to generate article');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!lastPrompt) {
+      alert('No previous prompt found');
+      return;
+    }
+    
+    setGenerating(true);
+    try {
+      const response = await fetch('/api/admin/generate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          topic: lastPrompt 
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('AI Regenerated Data:', data); // Debug log
+        
+        // Explicitly set the form data with the generated content
+        setFormData(prevData => ({
+          ...prevData,
+          title: data.title || '',
+          content: data.content || '',
+          hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
+          teaser: data.excerpt || '',
+        }));
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to regenerate article');
+      }
+    } catch (error) {
+      console.error('Error regenerating article:', error);
+      alert('Failed to regenerate article');
     } finally {
       setGenerating(false);
     }
@@ -192,11 +239,21 @@ export default function NewArticlePage() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowAIModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 transition-colors rounded-lg"
+              className="flex items-center space-x-2 px-4 py-2 bg-black text-white hover:bg-gray-800 transition-colors rounded-lg"
             >
               <Wand2 size={20} />
               <span>Generate with AI</span>
             </button>
+            {articleGenerated && (
+              <button
+                onClick={handleRegenerate}
+                disabled={generating}
+                className="flex items-center space-x-2 px-4 py-2 border-2 border-black text-black hover:bg-gray-100 transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw size={20} className={generating ? 'animate-spin' : ''} />
+                <span>Regenerate</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -537,7 +594,7 @@ export default function NewArticlePage() {
                 <button
                   onClick={handleGenerateWithAI}
                   disabled={generating}
-                  className="flex-1 px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 font-medium"
+                  className="flex-1 px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium"
                 >
                   {generating ? 'Generating...' : 'Generate Article'}
                 </button>

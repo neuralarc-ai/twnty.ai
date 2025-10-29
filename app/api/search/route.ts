@@ -10,12 +10,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
-    // Search in title, content, teaser, and hashtags
+    // Search in title, content, excerpt, and hashtags
+    const searchTerm = `%${query}%`;
     const { data, error } = await supabase
       .from(TABLES.ARTICLES)
       .select('*')
       .eq('status', 'published')
-      .or(`title.ilike.%${query}%,content.ilike.%${query}%,teaser.ilike.%${query}%,hashtags.cs.{${query}}`)
+      .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},excerpt.ilike.${searchTerm}`)
       .order('published_at', { ascending: false })
       .limit(50);
 

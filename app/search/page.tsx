@@ -16,8 +16,10 @@ function stripHtmlTags(html: string): string {
 interface Article {
   id: string;
   title: string;
-  teaser: string;
-  featured_image: string;
+  excerpt: string;
+  image_url: string;
+  featured_image?: string;
+  teaser?: string;
   hashtags: string[];
   published_at: string;
   views: number;
@@ -142,10 +144,10 @@ export default function SearchPage() {
                   >
                     <div className="flex flex-col md:flex-row">
                       {/* Image */}
-                      {article.featured_image && (
+                      {(article.image_url || article.featured_image) && (
                         <div className="md:w-1/3 relative h-64 md:h-auto bg-gray-100">
                           <SafeImage
-                            logsrc={article.featured_image}
+                            src={article.image_url || article.featured_image || ''}
                             alt={article.title}
                             fill
                             className="object-cover"
@@ -154,7 +156,7 @@ export default function SearchPage() {
                       )}
                       
                       {/* Content */}
-                      <div className={`p-6 ${article.featured_image ? 'md:w-2/3' : 'w-full'}`}>
+                      <div className={`p-6 ${(article.image_url || article.featured_image) ? 'md:w-2/3' : 'w-full'}`}>
                         {/* Hashtags */}
                         {article.hashtags && article.hashtags.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-3">
@@ -174,9 +176,9 @@ export default function SearchPage() {
                           {article.title}
                         </h2>
 
-                        {/* Teaser */}
+                        {/* Excerpt/Teaser */}
                         <p className="text-gray-700 mb-4 line-clamp-3">
-                          {stripHtmlTags(article.teaser)}
+                          {stripHtmlTags(article.excerpt || article.teaser || '')}
                         </p>
 
                         {/* Meta */}
