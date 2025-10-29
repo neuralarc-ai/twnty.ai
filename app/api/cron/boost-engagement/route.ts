@@ -59,6 +59,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Verify Supabase configuration
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://placeholder.supabase.co') {
+      return NextResponse.json({ 
+        error: 'Supabase not configured',
+        details: 'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid'
+      }, { status: 500 });
+    }
+
     // Get all published articles
     const { data: articles, error } = await supabase
       .from(TABLES.ARTICLES)
@@ -145,19 +156,44 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error boosting engagement:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Better error extraction for various error types
+    let errorMessage = 'Unknown error';
+    let errorDetails: any = null;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = {
+        name: error.name,
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
+    } else if (typeof error === 'object' && error !== null) {
+      // Handle Supabase errors and other object errors
+      const err = error as any;
+      errorMessage = err.message || err.error_description || err.details || err.hint || JSON.stringify(error);
+      errorDetails = {
+        code: err.code,
+        message: err.message,
+        details: err.details,
+        hint: err.hint,
+        raw: process.env.NODE_ENV === 'development' ? err : undefined
+      };
+    } else {
+      errorMessage = String(error);
+    }
     
     console.error('Error details:', {
       message: errorMessage,
-      stack: errorStack,
-      type: typeof error
+      details: errorDetails,
+      type: typeof error,
+      stringified: JSON.stringify(error)
     });
     
     return NextResponse.json({ 
       error: 'Failed to boost engagement',
       details: errorMessage,
-      stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      ...(errorDetails && { errorInfo: errorDetails })
     }, { status: 500 });
   }
 }
