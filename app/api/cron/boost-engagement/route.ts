@@ -43,6 +43,7 @@ function generateRandomEmail(name: string): string {
 
 // Runtime config for Vercel Edge/Serverless
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {

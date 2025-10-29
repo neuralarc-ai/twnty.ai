@@ -77,3 +77,5 @@ Try creating an article now:
 **Date:** December 28, 2024  
 **Status:** ✅ Fixed - Articles can now be created without scheduled_at column errors
 
+
+
