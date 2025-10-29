@@ -7,17 +7,27 @@ import { Edit, Trash2, Eye, Heart, MessageCircle } from 'lucide-react';
 import DeleteArticleButton from '@/components/DeleteArticleButton';
 
 async function getArticles() {
-  const { data, error } = await supabase
-    .from(TABLES.ARTICLES)
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return [];
+    }
 
-  if (error) {
+    const { data, error } = await supabase
+      .from(TABLES.ARTICLES)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching articles:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
     console.error('Error fetching articles:', error);
     return [];
   }
-
-  return data || [];
 }
 
 export const revalidate = 0;

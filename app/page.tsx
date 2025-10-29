@@ -17,6 +17,13 @@ async function getPublishedArticles() {
   }
 
   try {
+    // Double check environment variables are available
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return [];
+    }
+
     const { data, error } = await supabase
       .from(TABLES.ARTICLES)
       .select('*')

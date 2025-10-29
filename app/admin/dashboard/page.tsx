@@ -8,22 +8,52 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
 async function getAllArticles() {
-  const { data: articles } = await supabase
-    .from(TABLES.ARTICLES)
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return [];
+    }
 
-  return articles || [];
+    const { data: articles, error } = await supabase
+      .from(TABLES.ARTICLES)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching articles:', error);
+      return [];
+    }
+
+    return articles || [];
+  } catch (error) {
+    console.error('Error fetching articles:', error);
+    return [];
+  }
 }
 
 async function getRecentArticles() {
-  const { data: recentArticles } = await supabase
-    .from(TABLES.ARTICLES)
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(5);
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return [];
+    }
 
-  return recentArticles || [];
+    const { data: recentArticles, error } = await supabase
+      .from(TABLES.ARTICLES)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error('Error fetching recent articles:', error);
+      return [];
+    }
+
+    return recentArticles || [];
+  } catch (error) {
+    console.error('Error fetching recent articles:', error);
+    return [];
+  }
 }
 
 export const revalidate = 0;

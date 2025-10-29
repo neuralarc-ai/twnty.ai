@@ -5,16 +5,27 @@ import Image from 'next/image';
 import { Linkedin, Twitter, Globe } from 'lucide-react';
 
 async function getAuthorInfo() {
-  const { data, error } = await supabase
-    .from(TABLES.AUTHOR)
-    .select('*')
-    .single();
+  try {
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return null;
+    }
 
-  if (error || !data) {
+    const { data, error } = await supabase
+      .from(TABLES.AUTHOR)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching author info:', error);
     return null;
   }
-
-  return data;
 }
 
 export const revalidate = 60;

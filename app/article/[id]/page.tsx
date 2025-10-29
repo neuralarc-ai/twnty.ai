@@ -12,29 +12,40 @@ import { Heart, Eye, Clock, Calendar } from 'lucide-react';
 
 
 async function getArticle(id: string) {
-  const { data, error } = await supabase
-    .from(TABLES.ARTICLES)
-    .select('*')
-    .eq('id', id)
-    .eq('status', 'published')
-    .single();
+  try {
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      return null;
+    }
 
-  if (error || !data) {
+    const { data, error } = await supabase
+      .from(TABLES.ARTICLES)
+      .select('*')
+      .eq('id', id)
+      .eq('status', 'published')
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    // Increment view count (fire and forget, don't await)
+    supabase
+      .from(TABLES.ARTICLES)
+      .update({ views: (data.views || 0) + 1 })
+      .eq('id', id)
+      .then(() => {}, (err) => console.error('Error updating view count:', err));
+
+    // Map database column names to frontend-friendly names
+    return {
+      ...data,
+      featured_image: data.image_url,
+      teaser: data.excerpt,
+    };
+  } catch (error) {
+    console.error('Error fetching article:', error);
     return null;
   }
-
-  // Increment view count
-  await supabase
-    .from(TABLES.ARTICLES)
-    .update({ views: (data.views || 0) + 1 })
-    .eq('id', id);
-
-  // Map database column names to frontend-friendly names
-  return {
-    ...data,
-    featured_image: data.image_url,
-    teaser: data.excerpt,
-  };
 }
 
 export const revalidate = 0;
