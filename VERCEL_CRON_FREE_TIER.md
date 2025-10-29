@@ -10,20 +10,27 @@ However, the code is set up to support both:
 
 ## Current Setup
 
-The `vercel.json` file is configured for Vercel Cron Jobs. If you're on the free tier:
+**`vercel.json` has been removed** because it causes deployment failures on Vercel free tier.
 
-1. **Option 1: Remove vercel.json** (if staying on free tier)
-   ```bash
-   git rm vercel.json
-   git commit -m "Remove vercel.json for free tier"
-   git push
-   ```
-   Then use external cron service (see below)
+### If you're on Free Tier (Current Setup):
+✅ Use external cron service (see below) - **This is the recommended solution**
 
-2. **Option 2: Upgrade to Pro** ($20/month)
+### If you want to use Vercel Cron Jobs:
+1. **Upgrade to Pro** ($20/month)
    - Go to Vercel Dashboard → Settings → Plan
    - Upgrade to Pro plan
-   - The cron job will automatically work
+2. **Add vercel.json back**:
+   ```json
+   {
+     "crons": [
+       {
+         "path": "/api/cron/boost-engagement",
+         "schedule": "0 * * * *"
+       }
+     ]
+   }
+   ```
+3. Redeploy - Vercel will automatically detect and configure the cron job
 
 ## Using External Cron Service (Free Tier Solution)
 
