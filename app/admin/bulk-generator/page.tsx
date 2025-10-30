@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
 import { Upload, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabase-client";
 
 export default function BulkGenerator() {
   const router = useRouter();
+  const [mode, setMode] = useState<'articles' | 'images'>('articles'); // 'articles' or 'images'
   const [topicsFile, setTopicsFile] = useState<File | null>(null);
   const [images, setImages] = useState<File[]>([]);
   const [status, setStatus] = useState<string>("");
@@ -59,18 +61,10 @@ export default function BulkGenerator() {
     onDrop: (files) => setImages(files),
   });
 
-  const handleSubmit = async () => {
-    if (!topicsFile || images.length === 0) {
-      setStatus("Please select a topics file and at least one image.");
-      return;
-    }
-    
-    // Check total file size (Vercel limit is 4.5MB for Serverless Functions)
-    const totalSize = topicsFile.size + images.reduce((sum, img) => sum + img.size, 0);
-    const maxSize = 4.3 * 1024 * 1024; // 4.3MB (safe buffer under Vercel's 4.5MB limit)
-    
-    if (totalSize > maxSize) {
-      setStatus(`Total file size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the limit (${(maxSize / 1024 / 1024).toFixed(2)}MB). Vercel's maximum is 4.5MB. Please reduce the number of images or compress them.`);
+  // Handle image-only uploads
+  const handleImageOnlyUpload = async () => {
+    if (images.length === 0) {
+      setStatus("Please select at least one image.");
       return;
     }
     
@@ -82,11 +76,153 @@ export default function BulkGenerator() {
     setIsComplete(false);
     setIsError(false);
     
-    const fd = new FormData();
-    fd.append("topicsFile", topicsFile);
-    images.forEach((img) => fd.append("images", img));
+    try {
+      const supabase = getSupabaseClient();
+      
+      setProgressLog(prev => [...prev, `Uploading ${images.length} images directly to storage...`]);
+      setCurrentProgress({ stage: 'uploading', progress: 0, total: images.length, message: 'Uploading images...' });
+      
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const timestamp = Date.now();
+        const safeName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}-${safeName}`;
+        
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('article-images')
+            .upload(filename, image, {
+              contentType: image.type,
+              upsert: false,
+            });
+          
+          if (uploadError) {
+            throw new Error(`Failed to upload ${image.name}: ${uploadError.message}`);
+          }
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('article-images')
+            .getPublicUrl(filename);
+          
+          uploadedUrls.push(publicUrl);
+          const progress = i + 1;
+          setCurrentProgress({ 
+            stage: 'uploading', 
+            progress, 
+            total: images.length, 
+            message: `Uploaded ${progress}/${images.length} images` 
+          });
+          setProgressLog(prev => [...prev, `Uploaded image ${progress}/${images.length}: ${image.name}`]);
+        } catch (uploadErr: any) {
+          throw new Error(`Failed to upload image ${image.name}: ${uploadErr.message}`);
+        }
+      }
+      
+      setProgressLog(prev => [...prev, `Successfully uploaded ${uploadedUrls.length} images to storage`]);
+      setIsComplete(true);
+      setStatus(`Successfully uploaded ${uploadedUrls.length} images!`);
+      setLoading(false);
+      setImages([]);
+      
+      // Auto-close after 3 seconds
+      setTimeout(() => {
+        handleCloseModal(true);
+      }, 3000);
+    } catch (e: any) {
+      setIsError(true);
+      setStatus(e.message || "Error while uploading images");
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    // If in images-only mode, handle image uploads only
+    if (mode === 'images') {
+      await handleImageOnlyUpload();
+      return;
+    }
+    
+    // Article generation mode
+    if (!topicsFile || images.length === 0) {
+      setStatus("Please select a topics file and at least one image.");
+      return;
+    }
+    
+    // Only check topics file size (images will be uploaded directly to Supabase)
+    const maxTopicsSize = 1 * 1024 * 1024; // 1MB for topics file (should be enough for CSV/Excel)
+    if (topicsFile.size > maxTopicsSize) {
+      setStatus(`Topics file size (${(topicsFile.size / 1024 / 1024).toFixed(2)}MB) exceeds the limit (1MB). Please use a smaller file.`);
+      return;
+    }
+    
+    setLoading(true);
+    setProgressLog([]);
+    setStatus("");
+    setCurrentProgress(null);
+    setShowModal(true);
+    setIsComplete(false);
+    setIsError(false);
     
     try {
+      const supabase = getSupabaseClient();
+      
+      // Step 1: Upload images directly to Supabase Storage from client
+      setProgressLog(prev => [...prev, `Uploading ${images.length} images directly to storage...`]);
+      setCurrentProgress({ stage: 'uploading', progress: 0, total: images.length, message: 'Uploading images...' });
+      
+      const imageUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const timestamp = Date.now();
+        const safeName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}-${safeName}`;
+        
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('article-images')
+            .upload(filename, image, {
+              contentType: image.type,
+              upsert: false,
+            });
+          
+          if (uploadError) {
+            throw new Error(`Failed to upload ${image.name}: ${uploadError.message}`);
+          }
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('article-images')
+            .getPublicUrl(filename);
+          
+          imageUrls.push(publicUrl);
+          const progress = i + 1;
+          setCurrentProgress({ 
+            stage: 'uploading', 
+            progress, 
+            total: images.length, 
+            message: `Uploaded ${progress}/${images.length} images` 
+          });
+          setProgressLog(prev => [...prev, `Uploaded image ${progress}/${images.length}: ${image.name}`]);
+        } catch (uploadErr: any) {
+          throw new Error(`Failed to upload image ${image.name}: ${uploadErr.message}`);
+        }
+      }
+      
+      setProgressLog(prev => [...prev, `Successfully uploaded ${imageUrls.length} images`]);
+      setCurrentProgress({ 
+        stage: 'uploading', 
+        progress: images.length, 
+        total: images.length, 
+        message: 'All images uploaded' 
+      });
+      
+      // Step 2: Send topics file + image URLs to API
+      setProgressLog(prev => [...prev, 'Sending topics and image URLs to server...']);
+      
+      const fd = new FormData();
+      fd.append("topicsFile", topicsFile);
+      fd.append("imageUrls", JSON.stringify(imageUrls)); // Send URLs as JSON string
+      
       const res = await fetch("/api/admin/bulk-generator", { method: "POST", body: fd });
       
       // Check if response is JSON before parsing
@@ -97,26 +233,19 @@ export default function BulkGenerator() {
         try {
           data = await res.json();
         } catch (jsonError: any) {
-          // If JSON parsing fails, show a user-friendly error
-          const errorMsg = res.status === 413 
-            ? "File size too large. Please reduce the number of images or their file sizes. Vercel's maximum is 4.5MB."
-            : `Failed to parse response: ${jsonError.message || "Invalid JSON response"}`;
+          const errorMsg = `Failed to parse response: ${jsonError.message || "Invalid JSON response"}`;
           throw new Error(errorMsg);
         }
       } else {
-        // Non-JSON response (e.g., "Request Entity Too Large")
         const text = await res.text();
-        const errorMsg = res.status === 413 
-          ? "File size too large. Please reduce the number of images or their file sizes. Vercel's maximum is 4.5MB."
-          : (text || `HTTP ${res.status}: ${res.statusText}`);
-        throw new Error(errorMsg);
+        throw new Error(text || `HTTP ${res.status}: ${res.statusText}`);
       }
       
       if (!res.ok) {
         throw new Error(data?.error || `HTTP ${res.status}: ${res.statusText}`);
       }
       
-      // Start listening to progress updates
+      // Step 3: Start listening to progress updates for article generation
       const jobId = data.jobId;
       if (jobId) {
         const eventSource = new EventSource(`/api/admin/bulk-generator?jobId=${jobId}`);
@@ -182,13 +311,52 @@ export default function BulkGenerator() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-8 pt-8">
         <h1 className="text-3xl font-serif font-bold mb-2">Bulk Article Generator</h1>
-        <p className="text-gray-600">Upload a CSV/XLSX of topics and a set of images. We will generate articles and schedule them hourly.</p>
+        <p className="text-gray-600 mb-4">
+          {mode === 'articles' 
+            ? 'Upload a CSV/XLSX of topics and a set of images. Images will be uploaded directly to storage (no size limit). We will generate articles and schedule them hourly.'
+            : 'Upload images directly to storage. No size limit - perfect for bulk image storage.'}
+        </p>
+        
+        {/* Mode Selector */}
+        <div className="flex gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setMode('articles');
+              setTopicsFile(null);
+              setStatus('');
+            }}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              mode === 'articles'
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Generate Articles
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('images');
+              setTopicsFile(null);
+              setStatus('');
+            }}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              mode === 'images'
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Upload Images Only
+          </button>
+        </div>
       </div>
 
       <div className="space-y-6">
-        {/* Topics uploader */}
-        <div className="bg-white border border-gray-200 p-6 rounded">
-          <label className="block text-sm font-medium mb-2">Upload Topics CSV/Excel *</label>
+        {/* Topics uploader - Only show in articles mode */}
+        {mode === 'articles' && (
+          <div className="bg-white border border-gray-200 p-6 rounded">
+            <label className="block text-sm font-medium mb-2">Upload Topics CSV/Excel *</label>
           <div
             {...getTopicsRootProps()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -206,11 +374,14 @@ export default function BulkGenerator() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Images uploader */}
         <div className="bg-white border border-gray-200 p-6 rounded">
-          <label className="block text-sm font-medium mb-2">Upload Images (multiple) *</label>
+          <label className="block text-sm font-medium mb-2">
+            Upload Images (multiple) {mode === 'articles' ? '*' : ''}
+          </label>
           <div
             {...getImagesRootProps()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -245,7 +416,9 @@ export default function BulkGenerator() {
             disabled={loading}
             className="px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors font-medium rounded-lg disabled:opacity-50"
           >
-            {loading ? "Processing..." : "Submit"}
+            {loading 
+              ? (mode === 'images' ? "Uploading..." : "Processing...") 
+              : (mode === 'images' ? "Upload Images" : "Generate Articles")}
           </button>
         </div>
 

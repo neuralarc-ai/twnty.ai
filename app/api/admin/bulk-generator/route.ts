@@ -60,28 +60,6 @@ async function readTopicsFromFile(file: File): Promise<string[]> {
   return parseCsvTopics(text);
 }
 
-async function uploadImageToStorage(file: File): Promise<string> {
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filename = `${timestamp}-${safeName}`;
-
-  const { error } = await supabase.storage
-    .from('article-images')
-    .upload(filename, buffer, {
-      contentType: file.type,
-      upsert: false,
-    });
-  if (error) {
-    throw new Error(`Storage upload failed: ${error.message}`);
-  }
-  const { data: { publicUrl } } = supabase.storage
-    .from('article-images')
-    .getPublicUrl(filename);
-  return publicUrl;
-}
-
 function updateProgress(jobId: string, stage: string, progress: number, total: number, message: string) {
   progressStore.set(jobId, { stage, progress, total, message });
 }
@@ -166,13 +144,23 @@ export async function POST(req: NextRequest) {
       throw err;
     }
     const topicsFile = formData.get('topicsFile') as File | null;
-    const imageFiles = formData.getAll('images').filter(v => v instanceof File) as File[];
+    const imageUrlsStr = formData.get('imageUrls') as string | null;
 
     if (!topicsFile) {
       return NextResponse.json({ error: 'topicsFile is required' }, { status: 400 });
     }
-    if (!imageFiles.length) {
-      return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
+    
+    let imageUrls: string[] = [];
+    if (imageUrlsStr) {
+      try {
+        imageUrls = JSON.parse(imageUrlsStr);
+      } catch (e) {
+        return NextResponse.json({ error: 'Invalid imageUrls format' }, { status: 400 });
+      }
+    }
+    
+    if (!imageUrls || imageUrls.length === 0) {
+      return NextResponse.json({ error: 'At least one image URL is required' }, { status: 400 });
     }
 
     // Generate job ID
@@ -188,23 +176,16 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        const totalSteps = 1 + imageFiles.length + topics.length;
-        updateProgress(jobId, 'uploading', 1, totalSteps, `Uploading ${imageFiles.length} images...`);
+        // Images are already uploaded from client, so we can proceed directly to generation
+        const totalSteps = topics.length;
+        updateProgress(jobId, 'generating', 0, totalSteps, `Generating ${topics.length} articles using ${imageUrls.length} images...`);
         
-        const imageUrls: string[] = [];
-        for (let i = 0; i < imageFiles.length; i++) {
-          const url = await uploadImageToStorage(imageFiles[i]);
-          imageUrls.push(url);
-          updateProgress(jobId, 'uploading', 1 + i + 1, totalSteps, `Uploaded ${i + 1}/${imageFiles.length} images`);
-        }
-
-        updateProgress(jobId, 'generating', 1 + imageFiles.length, totalSteps, `Generating ${topics.length} articles...`);
         const createdIds: string[] = [];
         const now = Date.now();
 
         for (let i = 0; i < topics.length; i++) {
           const topic = topics[i];
-          updateProgress(jobId, 'generating', 1 + imageFiles.length + i, totalSteps, `Generating article ${i + 1}/${topics.length}: ${topic.substring(0, 50)}...`);
+          updateProgress(jobId, 'generating', i, totalSteps, `Generating article ${i + 1}/${topics.length}: ${topic.substring(0, 50)}...`);
           
           const generated = await generateArticleWithGemini(apiKey, topic);
           const randomImageUrl = imageUrls[Math.floor(Math.random() * imageUrls.length)] || null;
@@ -229,7 +210,7 @@ export async function POST(req: NextRequest) {
           if (error) throw error;
           if (data?.id) createdIds.push(data.id);
 
-          updateProgress(jobId, 'scheduling', 1 + imageFiles.length + topics.length + i, totalSteps, `Scheduled ${i + 1}/${topics.length} articles`);
+          updateProgress(jobId, 'scheduling', i + 1, totalSteps, `Scheduled ${i + 1}/${topics.length} articles`);
         }
 
         updateProgress(jobId, 'complete', totalSteps, totalSteps, `Successfully scheduled ${createdIds.length} articles using ${imageUrls.length} images`);
