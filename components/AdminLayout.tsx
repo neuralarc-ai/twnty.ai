@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X, MessageSquare, UploadCloud, Clock } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,13 +16,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login');
   };
 
+  // Don't show sidebar on login page
+  const isLoginPage = pathname === '/admin/login';
+
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Articles', href: '/admin/articles', icon: FileText },
+    { name: 'Article Queue', href: '/admin/articles/queue', icon: Clock },
     { name: 'New Article', href: '/admin/articles/new', icon: PlusCircle },
+    { name: 'Bulk Generator', href: '/admin/bulk-generator', icon: UploadCloud },
     { name: 'Comments', href: '/admin/comments', icon: MessageSquare },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
+
+  // On login page, return children without layout
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -96,10 +106,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:ml-64">
         {/* Top bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-4 lg:px-8">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
@@ -119,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

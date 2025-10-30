@@ -1,0 +1,123 @@
+name: Boost Blog Engagement
+
+on:
+  schedule:
+    # Runs every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows manual triggering from Actions tab
+
+jobs:
+  boost-engagement:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.api-call.outputs.status }}
+      http_code: ${{ steps.api-call.outputs.http_code }}
+      message: ${{ steps.api-call.outputs.message }}
+    steps:
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "❌ Error: CRON_SECRET is not set in GitHub Secrets"
+            echo "Please add CRON_SECRET to your repository secrets"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_DOMAIN }}" ]; then
+            echo "❌ Error: VERCEL_DOMAIN is not set in GitHub Secrets"
+            echo "Please add VERCEL_DOMAIN (e.g., your-blog.vercel.app) to your repository secrets"
+            exit 1
+          fi
+          echo "✅ Secrets verified"
+
+      - name: Call Engagement Boost API
+        id: api-call
+        run: |
+          set -e  # Exit on any error
+          
+          DOMAIN="${{ secrets.VERCEL_DOMAIN }}"
+          SECRET="${{ secrets.CRON_SECRET }}"
+          BYPASS_TOKEN="${{ secrets.VERCEL_BYPASS_TOKEN }}"
+          URL="https://$DOMAIN/api/cron/boost-engagement"
+          RESPONSE_FILE="response_body.txt"
+          
+          echo "📡 Calling API endpoint..."
+          echo "Domain: $DOMAIN"
+          
+          # Build curl command arguments array
+          CURL_ARGS=(-s -o "$RESPONSE_FILE" -w "%{http_code}" -X GET --max-time 30)
+          CURL_ARGS+=(-H "Authorization: Bearer $SECRET")
+          CURL_ARGS+=(-H "User-Agent: GitHub-Actions")
+          
+          # Add bypass token as header if available (for Vercel deployment protection)
+          if [ -n "$BYPASS_TOKEN" ]; then
+            CURL_ARGS+=(-H "x-vercel-protection-bypass: $BYPASS_TOKEN")
+            echo "✓ Using bypass token header for deployment protection"
+          else
+            echo "ℹ Note: Bypass token not set - ensure deployment protection is disabled"
+          fi
+          
+          CURL_ARGS+=("$URL")
+          
+          echo "URL: $URL"
+          
+          # Make the API call and capture both response and status code
+          HTTP_CODE=$(curl "${CURL_ARGS[@]}" || echo "000")
+          
+          echo ""
+          echo "--- Response ---"
+          echo "HTTP Status Code: $HTTP_CODE"
+          echo "Response Body:"
+          if [ -f "$RESPONSE_FILE" ]; then
+            cat "$RESPONSE_FILE"
+          else
+            echo "(No response body)"
+          fi
+          echo "---"
+          echo ""
+          
+          # Validate response format if successful
+          if [ "$HTTP_CODE" = "200" ]; then
+            # Check if response is valid JSON (optional check, jq might not be available)
+            if command -v jq >/dev/null 2>&1 && [ -f "$RESPONSE_FILE" ]; then
+              if ! jq empty "$RESPONSE_FILE" 2>/dev/null; then
+                echo "⚠ Warning: Response is not valid JSON"
+              fi
+            fi
+            
+            # Extract message from response for output
+            MESSAGE=$(cat "$RESPONSE_FILE" | grep -o '"message":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "Success")
+            echo "✅ Success! API call completed successfully."
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          elif [ "$HTTP_CODE" = "000" ]; then
+            echo "❌ Error: Failed to connect to API (network error or timeout)"
+            echo "Check if the domain is correct and accessible"
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "message=Connection failed" >> $GITHUB_OUTPUT
+            exit 1
+          elif [ "$HTTP_CODE" = "401" ]; then
+            echo "❌ Error: Unauthorized (HTTP 401)"
+            echo "Check if CRON_SECRET matches your Vercel environment variable"
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "message=Unauthorized" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "❌ Error: API returned HTTP $HTTP_CODE"
+            echo "Check the response body above for details"
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "message=HTTP $HTTP_CODE" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          
+          # Cleanup
+          rm -f "$RESPONSE_FILE"
+          
+      - name: Display Summary
+        if: always()
+        run: |
+          echo "📊 Job Summary:"
+          echo "Status: ${{ steps.api-call.outputs.status }}"
+          echo "HTTP Code: ${{ steps.api-call.outputs.http_code }}"
+          echo "Message: ${{ steps.api-call.outputs.message }}"
+

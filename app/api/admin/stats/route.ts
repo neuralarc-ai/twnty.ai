@@ -20,15 +20,17 @@ export async function GET(request: NextRequest) {
     // Get all stats in parallel for better performance
     const [
       { count: totalArticles },
-      { count: totalVisitors },
-      { count: totalLikes },
+      { data: articles },
       { count: totalComments }
     ] = await Promise.all([
       supabase.from(TABLES.ARTICLES).select('*', { count: 'exact', head: true }),
-      supabase.from(TABLES.VISITORS).select('*', { count: 'exact', head: true }),
-      supabase.from(TABLES.LIKES).select('*', { count: 'exact', head: true }),
+      supabase.from(TABLES.ARTICLES).select('views, likes'),
       supabase.from(TABLES.COMMENTS).select('*', { count: 'exact', head: true }),
     ]);
+
+    // Calculate total visitors and likes from articles
+    const totalVisitors = articles?.reduce((sum, article) => sum + (article.views || 0), 0) || 0;
+    const totalLikes = articles?.reduce((sum, article) => sum + (article.likes || 0), 0) || 0;
 
     return NextResponse.json({
       totalArticles: totalArticles || 0,

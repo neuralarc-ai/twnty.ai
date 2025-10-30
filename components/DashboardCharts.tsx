@@ -57,25 +57,44 @@ export default function DashboardCharts({ articles }: { articles: Article[] }) {
           <h2 className="text-xl font-serif font-bold">Articles by Status</h2>
         </div>
         {statusData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={statusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry: any) => `${entry.name} ${((entry.percent || 0) * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="#000" strokeWidth={2} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="px-4">
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={{ stroke: '#000', strokeWidth: 1 }}
+                  label={({ name, percent, cx, cy, midAngle, outerRadius }: any) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius + 20;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text 
+                        x={x} 
+                        y={y} 
+                        fill="#000" 
+                        textAnchor={x > cx ? 'start' : 'end'} 
+                        dominantBaseline="central"
+                        style={{ fontSize: '12px', fontWeight: 'bold' }}
+                      >
+                        {name} {((percent || 0) * 100).toFixed(0)}%
+                      </text>
+                    );
+                  }}
+                  outerRadius={60}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#000" strokeWidth={2} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center text-gray-500">
             No data available
