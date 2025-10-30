@@ -64,6 +64,16 @@ export default function BulkGenerator() {
       setStatus("Please select a topics file and at least one image.");
       return;
     }
+    
+    // Check total file size (Vercel limit is 4.5MB for Serverless Functions)
+    const totalSize = topicsFile.size + images.reduce((sum, img) => sum + img.size, 0);
+    const maxSize = 4.3 * 1024 * 1024; // 4.3MB (safe buffer under Vercel's 4.5MB limit)
+    
+    if (totalSize > maxSize) {
+      setStatus(`Total file size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the limit (${(maxSize / 1024 / 1024).toFixed(2)}MB). Vercel's maximum is 4.5MB. Please reduce the number of images or compress them.`);
+      return;
+    }
+    
     setLoading(true);
     setProgressLog([]);
     setStatus("");
@@ -78,8 +88,33 @@ export default function BulkGenerator() {
     
     try {
       const res = await fetch("/api/admin/bulk-generator", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+      
+      // Check if response is JSON before parsing
+      const contentType = res.headers.get("content-type") || "";
+      let data;
+      
+      if (contentType.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch (jsonError: any) {
+          // If JSON parsing fails, show a user-friendly error
+          const errorMsg = res.status === 413 
+            ? "File size too large. Please reduce the number of images or their file sizes. Vercel's maximum is 4.5MB."
+            : `Failed to parse response: ${jsonError.message || "Invalid JSON response"}`;
+          throw new Error(errorMsg);
+        }
+      } else {
+        // Non-JSON response (e.g., "Request Entity Too Large")
+        const text = await res.text();
+        const errorMsg = res.status === 413 
+          ? "File size too large. Please reduce the number of images or their file sizes. Vercel's maximum is 4.5MB."
+          : (text || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(errorMsg);
+      }
+      
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
       
       // Start listening to progress updates
       const jobId = data.jobId;

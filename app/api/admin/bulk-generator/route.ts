@@ -5,6 +5,7 @@ import { generateArticleWithGemini } from '@/lib/gemini';
 import * as XLSX from 'xlsx';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes for bulk processing
 
 // In-memory progress store (for production, use Redis or database)
 const progressStore = new Map<string, { stage: string; progress: number; total: number; message: string }>();
@@ -152,7 +153,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key is not configured' }, { status: 500 });
     }
 
-    const formData = await req.formData();
+    let formData;
+    try {
+      formData = await req.formData();
+    } catch (err: any) {
+      // Handle body size limit errors
+      if (err.message && (err.message.includes('Too Large') || err.message.includes('size limit') || err.message.includes('PAYLOAD_TOO_LARGE'))) {
+        return NextResponse.json({ 
+          error: 'File size too large. Please reduce the number of images or their file sizes. Vercel\'s maximum request body size is 4.5MB for Serverless Functions.' 
+        }, { status: 413 });
+      }
+      throw err;
+    }
     const topicsFile = formData.get('topicsFile') as File | null;
     const imageFiles = formData.getAll('images').filter(v => v instanceof File) as File[];
 
