@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import LikeButton from '@/components/LikeButton';
 import ShareButton from '@/components/ShareButton';
 import CommentSection from '@/components/CommentSection';
-import { Heart, Eye, Clock, Calendar } from 'lucide-react';
+import { Heart, Eye, BookOpen, Calendar } from 'lucide-react';
 // Rich text content will be rendered directly as HTML
 
 
@@ -94,7 +94,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
                 <span>{publishedDate}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock size={16} />
+                <BookOpen size={16} />
                 <span>{readingTime} min read</span>
               </div>
               <div className="flex items-center gap-2">

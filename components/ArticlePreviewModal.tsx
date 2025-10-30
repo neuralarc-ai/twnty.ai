@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Eye, Heart, Clock, Calendar } from 'lucide-react';
+import { X, Eye, Heart, BookOpen, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 // Rich text content will be rendered directly as HTML
@@ -98,7 +98,7 @@ export default function ArticlePreviewModal({
                   <span>{publishedDate}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Clock size={16} />
+                  <BookOpen size={16} />
                   <span>{readingTime} min read</span>
                 </div>
               </div>

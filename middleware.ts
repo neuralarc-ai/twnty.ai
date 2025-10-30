@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { maybeRunHourlyBoost } from '@/lib/hourlyBoost';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  // Opportunistically trigger small hourly engagement boosts (non-blocking when not due)
+  // Errors are swallowed inside the function
+  await maybeRunHourlyBoost();
+
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
 

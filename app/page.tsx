@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured, TABLES } from '@/lib/supabase';
 import Link from 'next/link';
 import SafeImage from '@/components/SafeImage';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye, Heart, Clock } from 'lucide-react';
+import { Eye, Heart, Clock, BookOpen } from 'lucide-react';
 
 // Helper function to strip HTML tags from teaser
 function stripHtmlTags(html: string): string {
@@ -289,8 +289,8 @@ export default async function HomePage() {
                               <span>{article.likes || 0}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              <span>{readingTime} min</span>
+                              <BookOpen size={14} />
+                              <span>{readingTime} min read</span>
                             </div>
                           </div>
                         </div>
