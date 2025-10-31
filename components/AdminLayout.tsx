@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X, MessageSquare, UploadCloud, Clock } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, PlusCircle, LogOut, Menu, X, MessageSquare, UploadCloud, Clock, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Article Queue', href: '/admin/articles/queue', icon: Clock },
     { name: 'New Article', href: '/admin/articles/new', icon: PlusCircle },
     { name: 'Bulk Generator', href: '/admin/bulk-generator', icon: UploadCloud },
+    { name: 'Image Manager', href: '/admin/images', icon: ImageIcon },
     { name: 'Comments', href: '/admin/comments', icon: MessageSquare },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
